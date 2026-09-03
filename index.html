@@ -530,15 +530,13 @@
     .perf-cell { padding: 20px 16px; }
 
     /* POSTE LIST */
-    .poste-row { grid-template-columns: 120px 1fr; gap: 10px; padding: 14px; font-size: 12px; }
+    .poste-row { grid-template-columns: 120px 1fr auto; gap: 10px; padding: 14px; font-size: 12px; }
     .poste-row.header { display: none; }
     .poste-bar-cell { height: 22px; }
     .poste-amount.dim { display: none; }
     .poste-pv { display: none; }
     .poste-pct { display: none; }
-    .poste-amount:not(.dim) { font-size: 13px; font-weight: 600; }
-    /* Afficher PV inline sous le nom */
-    .poste-name-wrap { display: flex; flex-direction: column; gap: 3px; }
+    .poste-amount-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
     .poste-pv-inline { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
     .poste-pv-inline.pos { color: #3d6b45; }
     .poste-pv-inline.neg { color: #933a2a; }
@@ -1277,13 +1275,15 @@
         row.innerHTML = `
           <div class="poste-name">
             <span class="poste-dot" style="background:${p.color}"></span>
-            <div class="poste-name-wrap">
-              <span>${p.label}</span>
-            </div>
+            <span>${p.label}</span>
           </div>
-          <div class="poste-bar-cell"><div class="poste-bar-value" style="width:${valeurBarW}%; background:${p.color}; opacity:0.85;"></div></div>
+          <div class="poste-bar-cell">
+            <div class="poste-bar-value" style="width:${valeurBarW}%; background:${p.color}; opacity:0.85;"></div>
+          </div>
+          <div class="poste-amount-wrap">
+            <div class="poste-amount">${fmt(valeur)} €</div>
+          </div>
           <div class="poste-amount dim">—</div>
-          <div class="poste-amount">${fmt(valeur)} €</div>
           <div class="poste-pv" style="color:var(--ink-mute);font-style:italic;">non suivi</div>
           <div class="poste-pct" style="color:var(--ink-mute);background:transparent;">—</div>
         `;
@@ -1293,17 +1293,17 @@
         row.innerHTML = `
           <div class="poste-name">
             <span class="poste-dot" style="background:${p.color}"></span>
-            <div class="poste-name-wrap">
-              <span>${p.label}</span>
-              <span class="poste-pv-inline ${pvCls}">${pvInline}</span>
-            </div>
+            <span>${p.label}</span>
           </div>
           <div class="poste-bar-cell">
             <div class="poste-bar-invest" style="width:${investBarW}%"></div>
             <div class="poste-bar-value" style="width:${valeurBarW}%; background:${p.color}; opacity:0.85;"></div>
           </div>
+          <div class="poste-amount-wrap">
+            <div class="poste-amount" style="font-size:13px;font-weight:600;">${fmt(valeur)} €</div>
+            <div class="poste-pv-inline ${pvCls}">${pvInline}</div>
+          </div>
           <div class="poste-amount dim">${fmt(invest)} €</div>
-          <div class="poste-amount">${fmt(valeur)} €</div>
           <div class="poste-pv ${pvCls}">${fmtSigned(pv)} €</div>
           <div class="poste-pct ${pvCls}">${pv >= 0 ? '+' : ''}${pvPctP.toFixed(1).replace('.', ',')} %</div>
         `;
