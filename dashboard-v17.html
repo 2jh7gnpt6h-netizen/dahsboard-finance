@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light only" />
+<meta name="theme-color" content="#f4f1ea" />
+<title>Patrimoine — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light only;
+    --bg: #f4f1ea; --bg-deep: #ebe6db;
+    --ink: #1a1815; --ink-soft: #4a4640; --ink-mute: #857e72;
+    --line: #d4cec0;
+    --accent: #8b6b2f; --accent-deep: #5e4820;
+    --positive: #3d6b45; --positive-soft: #7fb186;
+    --warn: #a85a2a; --danger: #933a2a; --danger-soft: #d68a78;
+  }
+  html { background: #f4f1ea; color: #1a1815; }
+  body { background: #f4f1ea !important; color: #1a1815 !important; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: #f4f1ea; color: var(--ink);
+    font-weight: 400; line-height: 1.5; min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(139, 107, 47, 0.05), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(93, 72, 32, 0.04), transparent 50%);
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: 'tnum'; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  /* DROP ZONE */
+  .data-bar {
+    background: #ebe6db; border: 1px solid var(--line);
+    padding: 16px 20px; margin-bottom: 32px; border-radius: 4px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    transition: all 0.2s;
+  }
+  .data-bar.drag-over {
+    background: #fff9e6; border-color: var(--accent); border-style: dashed;
+  }
+  .data-bar label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-mute); white-space: nowrap;
+  }
+  .data-bar .status {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-mute); flex: 1; min-width: 200px;
+  }
+  .data-bar .status.ok { color: var(--positive); }
+  .data-bar .status.err { color: var(--danger); }
+  .file-btn {
+    padding: 10px 20px; background: var(--ink); color: #f4f1ea;
+    border: none; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; border-radius: 3px; transition: background 0.2s;
+  }
+  .file-btn:hover { background: var(--accent-deep); color: #f4f1ea; }
+  .file-btn.secondary { background: transparent; color: var(--ink-mute); border: 1px solid var(--line); }
+  .file-btn.secondary:hover { background: #f4f1ea; color: var(--ink); }
+  #fileInput { display: none; }
+
+  .state-box {
+    padding: 48px 40px; text-align: center;
+    border: 1px dashed var(--line); background: #f4f1ea;
+    border-radius: 4px; margin-bottom: 32px;
+  }
+  .state-box h3 { font-size: 22px; font-weight: 400; font-style: italic; margin-bottom: 10px; }
+  .state-box p { color: var(--ink-soft); font-size: 14px; max-width: 560px; margin: 0 auto 12px; }
+  .state-box code {
+    display: inline-block; background: #ebe6db; padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    border-radius: 2px;
+  }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 32px; margin-bottom: 48px;
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: end; gap: 32px;
+  }
+  .brand {
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--ink-mute); font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: clamp(42px, 6vw, 76px); font-weight: 300;
+    letter-spacing: -0.03em; line-height: 0.95; font-style: italic;
+    color: #1a1815 !important;
+  }
+  h1 em { font-weight: 500; font-style: normal; color: #5e4820 !important; }
+  .date-block {
+    text-align: right; font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--ink-soft); line-height: 1.8;
+  }
+  .date-block strong { font-weight: 500; color: var(--ink); display: block; font-size: 14px; }
+
+  /* HERO */
+  .hero {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px;
+    margin-bottom: 48px; padding: 40px;
+    background: var(--ink); color: var(--bg);
+    border-radius: 4px; position: relative; overflow: hidden;
+  }
+  .hero, .hero * { color: #f4f1ea; }
+  .hero h1, .hero h2, .hero h3 { color: #f4f1ea; }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; right: -20%;
+    width: 60%; height: 200%;
+    background: radial-gradient(circle, rgba(139, 107, 47, 0.15), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-size: 10px; letter-spacing: 0.35em; text-transform: uppercase;
+    opacity: 0.5; font-family: 'JetBrains Mono', monospace; margin-bottom: 20px;
+  }
+  .hero-value {
+    font-size: clamp(56px, 8vw, 96px); font-weight: 300;
+    letter-spacing: -0.04em; line-height: 1; font-feature-settings: 'tnum';
+  }
+  .hero-value .currency { font-size: 0.4em; opacity: 0.5; margin-left: 8px; font-style: italic; font-weight: 300; }
+  .hero-sub { font-size: 14px; opacity: 0.7; margin-top: 12px; font-style: italic; }
+  .hero-delta {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px; padding: 6px 12px;
+    background: rgba(244, 241, 234, 0.08);
+    border: 1px solid rgba(244, 241, 234, 0.15);
+    border-radius: 3px; font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .hero-delta.up { color: var(--positive-soft); border-color: rgba(127, 177, 134, 0.3); }
+  .hero-delta.down { color: var(--danger-soft); border-color: rgba(214, 138, 120, 0.3); }
+  .hero-split { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-content: center; position: relative; z-index: 1; }
+  .hero-split .item { border-left: 1px solid rgba(244, 241, 234, 0.15); padding-left: 16px; }
+  .hero-split .mini-label {
+    font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
+    opacity: 0.4; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace;
+  }
+  .hero-split .mini-value { font-size: 28px; font-weight: 400; font-feature-settings: 'tnum'; letter-spacing: -0.02em; }
+  .hero-split .mini-value.dim { opacity: 0.6; }
+
+  /* PERF HERO */
+  .perf-hero {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    margin-bottom: 48px;
+  }
+  .perf-cell { background: #f4f1ea; padding: 32px 28px; color: #1a1815; }
+  .perf-cell.invested { background: #ebe6db; }
+  .perf-cell.pv { background-color: #3d6b45; background: linear-gradient(135deg, #3d6b45 0%, #5a8c63 100%); color: #f4f1ea; }
+  .perf-cell.pv.negative { background-color: #933a2a; background: linear-gradient(135deg, #933a2a 0%, #b5574a 100%); }
+  .perf-cell.pv, .perf-cell.pv * { color: #f4f1ea; }
+  .perf-label {
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace; margin-bottom: 14px; opacity: 0.7;
+  }
+  .perf-value { font-size: 40px; font-weight: 400; letter-spacing: -0.02em; font-feature-settings: 'tnum'; line-height: 1; }
+  .perf-value small { font-size: 18px; opacity: 0.5; font-style: italic; margin-left: 4px; }
+  .perf-sub { font-size: 13px; margin-top: 10px; font-style: italic; opacity: 0.75; }
+  .perf-pct {
+    display: inline-block; margin-top: 10px; padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.18); border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500;
+  }
+
+  /* POSTE LIST */
+  .poste-perf-list { background: #f4f1ea; border: 1px solid var(--line); margin-bottom: 48px; }
+  .poste-row {
+    display: grid; grid-template-columns: 160px 1fr 120px 120px 110px 90px;
+    gap: 18px; align-items: center; padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .poste-row:last-child { border-bottom: none; }
+  .poste-row.header {
+    background: #ebe6db; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-mute); padding: 12px 24px;
+  }
+  .poste-name { display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 16px; color: #1a1815; }
+  .poste-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .poste-bar-cell { position: relative; height: 28px; background: #ebe6db; border-radius: 2px; overflow: hidden; }
+  .poste-bar-invest { position: absolute; top: 0; left: 0; height: 100%; background: #857e72; opacity: 0.35; }
+  .poste-bar-value { position: absolute; top: 0; left: 0; height: 100%; border-radius: 2px; }
+  .poste-amount { font-family: 'JetBrains Mono', monospace; font-size: 13px; text-align: right; color: #1a1815; }
+  .poste-amount.dim { color: #857e72; }
+  .poste-pv { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; text-align: right; }
+  .poste-pv.pos { color: var(--positive); }
+  .poste-pv.neg { color: var(--danger); }
+  .poste-pct {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500;
+    text-align: right; padding: 3px 8px; border-radius: 2px; justify-self: end;
+  }
+  .poste-pct.pos { background: rgba(61, 107, 69, 0.12); color: var(--positive); }
+  .poste-pct.neg { background: rgba(147, 58, 42, 0.12); color: var(--danger); }
+
+  .section-head {
+    display: flex; align-items: baseline; gap: 16px;
+    margin-bottom: 24px; padding-top: 16px;
+  }
+  .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8b6b2f !important; letter-spacing: 0.2em; }
+  .section-title { font-size: 28px; font-weight: 400; letter-spacing: -0.01em; font-style: italic; color: #1a1815 !important; margin: 0; }
+  .section-rule { flex: 1; height: 1px; background: var(--line); }
+
+  h2 { color: #1a1815 !important; font-weight: 400; }
+  h3 { color: #1a1815; }
+
+  .chart-box { background: #f4f1ea; border: 1px solid var(--line); padding: 32px; margin-bottom: 48px; }
+  .chart-wrap { height: 400px; }
+  .chart-wrap.small { height: 340px; }
+
+  /* CHARGES FIXES */
+  .charges-section { margin-bottom: 48px; }
+
+  .charges-hero {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    margin-bottom: 16px;
+  }
+  .charges-cell { background: #f4f1ea; padding: 28px 24px; }
+  .charges-cell.accent { background: #ebe6db; }
+  .charges-cell.remaining {
+    background: linear-gradient(135deg, #5e4820 0%, #8b6b2f 100%);
+    color: #f4f1ea;
+  }
+  .charges-cell.remaining .charges-label,
+  .charges-cell.remaining .charges-sub { color: rgba(244,241,234,0.7); }
+  .charges-cell.remaining .charges-value { color: #f4f1ea; }
+  .charges-label {
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: #857e72; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px;
+  }
+  .charges-value {
+    font-size: 36px; font-weight: 400; letter-spacing: -0.02em;
+    font-feature-settings: 'tnum'; line-height: 1; color: #1a1815;
+  }
+  .charges-value small { font-size: 16px; opacity: 0.5; font-style: italic; margin-left: 4px; }
+  .charges-sub { font-size: 12px; color: #857e72; margin-top: 8px; font-style: italic; }
+
+  /* TIMELINE */
+  .charges-timeline {
+    background: #f4f1ea; border: 1px solid var(--line);
+    padding: 0; margin-bottom: 12px; overflow: hidden;
+  }
+  .timeline-header {
+    background: #ebe6db; padding: 10px 20px;
+    display: grid; grid-template-columns: 60px 1fr 100px 90px;
+    gap: 16px; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: #857e72;
+    border-bottom: 1px solid var(--line);
+  }
+  .timeline-row {
+    display: grid; grid-template-columns: 60px 1fr 100px 90px;
+    gap: 16px; align-items: center;
+    padding: 13px 20px; border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+  }
+  .timeline-row:last-child { border-bottom: none; }
+  .timeline-row.done { opacity: 0.45; }
+  .timeline-row.today { background: #fff9e6; border-left: 3px solid #8b6b2f; }
+  .timeline-row.next { background: rgba(139,107,47,0.04); }
+  .timeline-row:hover { background: #ebe6db; }
+
+  .tl-day {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: #857e72; text-align: center;
+  }
+  .tl-day .day-num {
+    font-size: 18px; font-weight: 500; color: #1a1815;
+    display: block; line-height: 1;
+  }
+  .tl-day.today-day .day-num { color: #8b6b2f; }
+  .tl-name { font-size: 14px; color: #1a1815; }
+  .tl-name .tl-badge {
+    display: inline-block; margin-left: 8px;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .tl-badge.done-badge { background: rgba(61,107,69,0.12); color: #3d6b45; }
+  .tl-badge.today-badge { background: #8b6b2f; color: #f4f1ea; }
+  .tl-badge.next-badge { background: rgba(139,107,47,0.12); color: #8b6b2f; }
+  .tl-amount {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    font-weight: 500; color: #1a1815; text-align: right;
+  }
+  .tl-cumul {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: #857e72; text-align: right;
+  }
+  .tl-status { font-size: 14px; text-align: center; }
+
+  /* PROCHAINE CHARGE */
+  .charges-next {
+    background: #f4f1ea; border: 1px solid var(--line);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 13px; color: #4a4640;
+  }
+  .charges-next .next-icon { font-size: 20px; }
+  .charges-next strong { color: #1a1815; }
+  .delta-hero {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 0;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+    align-items: stretch;
+  }
+  .delta-cell {
+    background: #f4f1ea;
+    padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .delta-cell.epargne { background: #f0f6f1; }
+  .delta-cell.marche { background: #f4f1ea; }
+  .delta-sep {
+    background: #ebe6db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #857e72;
+    font-weight: 300; padding: 0 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .delta-label {
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: #857e72; font-family: 'JetBrains Mono', monospace;
+  }
+  .delta-value {
+    font-size: 36px; font-weight: 400;
+    letter-spacing: -0.02em; font-feature-settings: 'tnum';
+    color: #1a1815; line-height: 1;
+  }
+  .delta-value.pos { color: #3d6b45; }
+  .delta-value.neg { color: #933a2a; }
+  .delta-sub { font-size: 12px; color: #857e72; font-style: italic; }
+
+  /* KPI GRID */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    margin-bottom: 48px;
+  }
+  .kpi { background: #f4f1ea; padding: 24px 20px; }
+  .kpi:hover { background: #ebe6db; }
+  .kpi-label {
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--ink-mute); margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .kpi-value {
+    font-size: 26px; font-weight: 400; letter-spacing: -0.02em;
+    font-feature-settings: 'tnum'; line-height: 1.1;
+    color: #1a1815 !important;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kpi-value small { font-size: 13px; opacity: 0.5; font-style: italic; }
+  .kpi-note { font-size: 12px; color: var(--ink-soft); margin-top: 8px; font-style: italic; }
+  .kpi-note.pos { color: var(--positive); }
+  .kpi-note.neg { color: var(--danger); }
+
+  /* PROJECTIONS */
+  .projections-box {
+    background: #f4f1ea; border: 1px solid var(--line);
+    padding: 32px; margin-bottom: 48px;
+  }
+  .proj-controls {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; margin-bottom: 28px;
+    padding-bottom: 24px; border-bottom: 1px solid var(--line);
+  }
+  .proj-control label {
+    display: block; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-mute); margin-bottom: 10px;
+  }
+  .proj-control .slider-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .proj-control input[type="range"] {
+    flex: 1; accent-color: var(--accent);
+  }
+  .proj-control .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; font-weight: 500;
+    color: var(--ink); min-width: 90px; text-align: right;
+  }
+  .proj-wrap { height: 340px; margin-bottom: 20px; }
+  .proj-milestones {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    margin-top: 16px;
+  }
+  .milestone { background: #f4f1ea; padding: 18px 16px; text-align: left; }
+  .milestone-age {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-mute); letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .milestone-value {
+    font-family: 'JetBrains Mono', monospace; font-size: 22px;
+    font-weight: 500; color: var(--accent-deep); line-height: 1;
+  }
+  .milestone-sub { font-size: 11px; color: var(--ink-soft); margin-top: 6px; font-style: italic; }
+
+  /* ALLOCATION */
+  .two-col { display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; margin-bottom: 48px; }
+  .alloc-chart-box {
+    background: #f4f1ea; border: 1px solid var(--line);
+    padding: 32px; min-height: 360px;
+  }
+  .allocation-list { display: flex; flex-direction: column; gap: 0; }
+  .alloc-row {
+    display: grid; grid-template-columns: 24px 1fr auto auto;
+    gap: 16px; align-items: center; padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .alloc-row:last-child { border-bottom: none; }
+  .alloc-dot { width: 12px; height: 12px; border-radius: 50%; justify-self: start; }
+  .alloc-name { font-size: 16px; font-weight: 400; color: #1a1815; }
+  .alloc-name small {
+    display: block; font-size: 11px; color: #857e72;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; margin-top: 2px;
+  }
+  .alloc-amount { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: #1a1815; }
+  .alloc-pct {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: #857e72; min-width: 50px; text-align: right;
+  }
+
+  .history-table {
+    background: #f4f1ea; border: 1px solid var(--line);
+    overflow-x: auto; margin-bottom: 48px;
+    max-height: 500px; overflow-y: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  th, td { padding: 11px 14px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    background: #ebe6db; font-weight: 500; font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    position: sticky; top: 0; z-index: 1;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #ebe6db; }
+  td.delta-pos { color: var(--positive); }
+  td.delta-neg { color: var(--danger); }
+  td.highlight { font-weight: 500; color: var(--ink); }
+
+  .note {
+    margin-top: 48px; padding-top: 32px;
+    border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--ink-mute);
+    font-style: italic; text-align: center;
+  }
+
+  /* EXPORT BAR */
+  .export-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 0; margin-bottom: 48px; flex-wrap: wrap;
+  }
+  .export-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: #857e72;
+    margin-right: 4px;
+  }
+  .export-btn-pill {
+    padding: 8px 18px;
+    background: #f4f1ea; color: #1a1815;
+    border: 1px solid #d4cec0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    cursor: pointer; border-radius: 20px;
+    transition: all 0.2s;
+  }
+  .export-btn-pill:hover { background: #1a1815; color: #f4f1ea; border-color: #1a1815; }
+  .export-btn-pill.copied { background: #3d6b45; color: #f4f1ea; border-color: #3d6b45; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 860px) {
+    .wrap { padding: 32px 20px 60px; }
+    header { grid-template-columns: 1fr; }
+    .date-block { text-align: left; }
+    .hero { grid-template-columns: 1fr; padding: 28px; }
+    .hero-split { grid-template-columns: 1fr 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .perf-hero { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .poste-row { grid-template-columns: 100px 1fr 70px; gap: 10px; padding: 14px; font-size: 11px; }
+    .poste-row .hide-mobile { display: none; }
+    .proj-controls { grid-template-columns: 1fr; }
+    .proj-milestones { grid-template-columns: 1fr 1fr; }
+  }
+
+  .fade-in { animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; opacity: 1; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in { animation: none; opacity: 1; }
+  }
+  .d1 { animation-delay: 0.05s; }
+  .d2 { animation-delay: 0.15s; }
+  .d3 { animation-delay: 0.25s; }
+  .d4 { animation-delay: 0.35s; }
+  .d5 { animation-delay: 0.45s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- DATA BAR -->
+  <div class="data-bar" id="dataBar">
+    <label>Source</label>
+    <span class="status" id="status">Chargement depuis Google Sheets...</span>
+    <button class="file-btn" id="refreshBtn" onclick="loadFromSheet()">↻ Actualiser</button>
+    <button class="file-btn secondary" id="loadBtn">Charger un CSV local</button>
+    <input type="file" id="fileInput" accept=".csv" style="display:none;" />
+  </div>
+
+  <!-- HELP BOX -->
+  <div class="state-box" id="helpBox">
+    <h3>Chargement en cours…</h3>
+    <p>Connexion à votre Google Sheet. Si le chargement échoue, utilisez <strong>"Charger un CSV local"</strong> pour glisser votre fichier directement.</p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
+
+    <header class="fade-in">
+      <div>
+        <div class="brand">— Patrimoine personnel · suivi mensuel</div>
+        <h1>Tableau de <em>bord</em><br>financier</h1>
+      </div>
+      <div class="date-block">
+        <strong id="lastUpdate">—</strong>
+        29 ans · revenu moyen <span id="avgRev">—</span> €
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero fade-in d1">
+      <div>
+        <div class="hero-label">● Patrimoine net</div>
+        <div class="hero-value mono"><span id="net-worth">—</span><span class="currency">€</span></div>
+        <div class="hero-sub">Dernier relevé mensuel</div>
+        <div class="hero-delta" id="heroDelta"></div>
+      </div>
+      <div class="hero-split">
+        <div class="item">
+          <div class="mini-label">Actifs</div>
+          <div class="mini-value mono" id="assets-total">—</div>
+        </div>
+        <div class="item">
+          <div class="mini-label">Dette</div>
+          <div class="mini-value mono dim" id="debt-total">—</div>
+        </div>
+        <div class="item">
+          <div class="mini-label">Investi (marché)</div>
+          <div class="mini-value mono" id="invested-total">—</div>
+        </div>
+        <div class="item">
+          <div class="mini-label">Liquide dispo</div>
+          <div class="mini-value mono" id="liquid-total">—</div>
+        </div>
+        <div class="item">
+          <div class="mini-label">Caution appart.</div>
+          <div class="mini-value mono dim" id="caution-total">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION CHARGES FIXES -->
+    <div class="section-head fade-in d2">
+      <span class="section-num">00 /</span>
+      <h2 class="section-title">Charges fixes du mois</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="charges-section fade-in d2">
+      <!-- HERO CHARGES -->
+      <div class="charges-hero">
+        <div class="charges-cell">
+          <div class="charges-label">— Total mensuel</div>
+          <div class="charges-value mono">1 597 <small>€</small></div>
+          <div class="charges-sub">Charges fixes · tous postes</div>
+        </div>
+        <div class="charges-cell accent">
+          <div class="charges-label">— Déjà prélevées</div>
+          <div class="charges-value mono" id="chargesPayees">—<small> €</small></div>
+          <div class="charges-sub" id="chargesPayeesSub">—</div>
+        </div>
+        <div class="charges-cell remaining">
+          <div class="charges-label">— Restant à imputer</div>
+          <div class="charges-value mono" id="chargesRestantes">—<small> €</small></div>
+          <div class="charges-sub" id="chargesRestantesSub">—</div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="charges-timeline" id="chargesTimeline"></div>
+
+      <!-- PROCHAINE CHARGE -->
+      <div class="charges-next" id="chargesNext"></div>
+    </section>
+
+    <!-- SECTION 1 : PERFORMANCE -->
+    <div class="section-head fade-in d2">
+      <span class="section-num">01 /</span>
+      <h2 class="section-title">Performance de vos placements</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="perf-hero fade-in d2">
+      <div class="perf-cell invested">
+        <div class="perf-label">— Capital investi</div>
+        <div class="perf-value mono"><span id="capInvested">—</span><small>€</small></div>
+        <div class="perf-sub">Total versé · tous postes</div>
+      </div>
+      <div class="perf-cell">
+        <div class="perf-label">— Valeur actuelle</div>
+        <div class="perf-value mono"><span id="capCurrent">—</span><small>€</small></div>
+        <div class="perf-sub">Valorisation marché</div>
+      </div>
+      <div class="perf-cell pv" id="pvCell">
+        <div class="perf-label">— Plus-value latente</div>
+        <div class="perf-value mono"><span id="pvAbs">—</span><small>€</small></div>
+        <div class="perf-sub">Gain non réalisé</div>
+        <div class="perf-pct"><span id="pvPct">—</span> %</div>
+      </div>
+    </section>
+
+    <!-- SECTION 2 : DÉTAIL PAR POSTE -->
+    <div class="section-head fade-in d2">
+      <span class="section-num">02 /</span>
+      <h2 class="section-title">Détail par poste</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="poste-perf-list fade-in d2">
+      <div class="poste-row header">
+        <div>Poste</div>
+        <div>Capital vs Valeur</div>
+        <div style="text-align:right;">Investi</div>
+        <div style="text-align:right;">Valeur</div>
+        <div style="text-align:right;">PV €</div>
+        <div style="text-align:right;">Perf</div>
+      </div>
+      <div id="posteList"></div>
+    </section>
+
+    <!-- SECTION 3 : KPIs AVANCÉS -->
+    <div class="section-head fade-in d3">
+      <span class="section-num">03 /</span>
+      <h2 class="section-title">Indicateurs clés</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="kpi-grid fade-in d3">
+      <div class="kpi">
+        <div class="kpi-label">Perf globale</div>
+        <div class="kpi-value mono" id="kpiPerf">—</div>
+        <div class="kpi-note" id="kpiPerfSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meilleur / pire</div>
+        <div class="kpi-value mono" style="font-size:18px;" id="kpiBest">—</div>
+        <div class="kpi-note" id="kpiBestSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Δ patrimoine / mois</div>
+        <div class="kpi-value mono" id="kpiDelta">—</div>
+        <div class="kpi-note" id="kpiDeltaSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Effort d'épargne / mois</div>
+        <div class="kpi-value mono" id="kpiEffort">—</div>
+        <div class="kpi-note" id="kpiEffortSub">—</div>
+      </div>
+    </section>
+
+    <section class="kpi-grid fade-in d3">
+      <div class="kpi">
+        <div class="kpi-label">Taux d'épargne</div>
+        <div class="kpi-value mono" id="kpiSaveRate">—</div>
+        <div class="kpi-note" id="kpiSaveRateSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Contribution marché / mois</div>
+        <div class="kpi-value mono" id="kpiMarket">—</div>
+        <div class="kpi-note" id="kpiMarketSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Ratio investi / actifs</div>
+        <div class="kpi-value mono" id="kpiRatio">—</div>
+        <div class="kpi-note" id="kpiRatioSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Mois de dépenses couverts</div>
+        <div class="kpi-value mono" id="kpiRunway">—</div>
+        <div class="kpi-note" id="kpiRunwaySub">—</div>
+      </div>
+    </section>
+
+    <section class="kpi-grid fade-in d3">
+      <div class="kpi">
+        <div class="kpi-label">Dette restante</div>
+        <div class="kpi-value mono" id="kpiDebt">—</div>
+        <div class="kpi-note pos" id="kpiDebtSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Mois de suivi</div>
+        <div class="kpi-value mono" id="kpiMonths">—</div>
+        <div class="kpi-note" id="kpiMonthsSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meilleur mois</div>
+        <div class="kpi-value mono" id="kpiBestMonth">—</div>
+        <div class="kpi-note" id="kpiBestMonthSub">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Volatilité mensuelle</div>
+        <div class="kpi-value mono" id="kpiVol">—</div>
+        <div class="kpi-note" id="kpiVolSub">—</div>
+      </div>
+    </section>
+
+    <!-- SECTION 3b : DÉCOMPOSITION DELTA -->
+    <div class="section-head fade-in d3">
+      <span class="section-num">04 /</span>
+      <h2 class="section-title">Décomposition de la variation mensuelle</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <!-- Dernier mois en détail -->
+    <section class="delta-hero fade-in d3">
+      <div class="delta-cell total">
+        <div class="delta-label">Δ Total (M vs M-1)</div>
+        <div class="delta-value mono" id="deltaTotal">—</div>
+        <div class="delta-sub" id="deltaTotalSub">—</div>
+      </div>
+      <div class="delta-sep">=</div>
+      <div class="delta-cell epargne">
+        <div class="delta-label">Votre effort</div>
+        <div class="delta-value mono" id="deltaEpargne">—</div>
+        <div class="delta-sub" id="deltaEpargneSub">Apports + dette remboursée</div>
+      </div>
+      <div class="delta-sep">+</div>
+      <div class="delta-cell marche">
+        <div class="delta-label">Le marché</div>
+        <div class="delta-value mono" id="deltaMarche">—</div>
+        <div class="delta-sub" id="deltaMarcheSub">Variation PV latente</div>
+      </div>
+    </section>
+
+    <!-- Graphique historique décomposé -->
+    <section class="chart-box fade-in d3" style="margin-bottom:48px;">
+      <div class="chart-wrap small">
+        <canvas id="deltaChart"></canvas>
+      </div>
+    </section>
+
+    <!-- SECTION 5 : GRAPHIQUES -->
+    <div class="section-head fade-in d4">
+      <span class="section-num">05 /</span>
+      <h2 class="section-title">Capital investi vs Valeur marché</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="chart-box fade-in d4">
+      <div class="chart-wrap">
+        <canvas id="investVsValueChart"></canvas>
+      </div>
+    </section>
+
+    <div class="section-head fade-in d4">
+      <span class="section-num">06 /</span>
+      <h2 class="section-title">Plus-value latente au fil du temps</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="chart-box fade-in d4">
+      <div class="chart-wrap small">
+        <canvas id="pvChart"></canvas>
+      </div>
+    </section>
+
+    <div class="section-head fade-in d4">
+      <span class="section-num">07 /</span>
+      <h2 class="section-title">Trajectoire patrimoine net</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="chart-box fade-in d4">
+      <div class="chart-wrap">
+        <canvas id="historyChart"></canvas>
+      </div>
+    </section>
+
+    <!-- SECTION 5 : PROJECTIONS -->
+    <div class="section-head fade-in d4">
+      <span class="section-num">08 /</span>
+      <h2 class="section-title">Projections à long terme</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="projections-box fade-in d4">
+      <div class="proj-controls">
+        <div class="proj-control">
+          <label>Apport mensuel</label>
+          <div class="slider-row">
+            <input type="range" id="projApport" min="0" max="2000" step="50" />
+            <span class="value"><span id="projApportVal">—</span> €</span>
+          </div>
+        </div>
+        <div class="proj-control">
+          <label>Rendement annuel cible</label>
+          <div class="slider-row">
+            <input type="range" id="projRate" min="0" max="12" step="0.5" value="6" />
+            <span class="value"><span id="projRateVal">6,0</span> %</span>
+          </div>
+        </div>
+        <div class="proj-control">
+          <label>Horizon</label>
+          <div class="slider-row">
+            <input type="range" id="projYears" min="5" max="35" step="1" value="20" />
+            <span class="value"><span id="projYearsVal">20</span> ans</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="proj-wrap">
+        <canvas id="projChart"></canvas>
+      </div>
+
+      <div class="proj-milestones" id="projMilestones"></div>
+    </section>
+
+    <!-- SECTION 6 : ALLOCATION -->
+    <div class="section-head fade-in d5">
+      <span class="section-num">09 /</span>
+      <h2 class="section-title">Allocation actuelle</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="two-col fade-in d5">
+      <div class="alloc-chart-box">
+        <canvas id="allocChart"></canvas>
+      </div>
+      <div class="allocation-list" id="allocList"></div>
+    </section>
+
+    <!-- SECTION 7 : HISTORIQUE -->
+    <div class="section-head fade-in d5">
+      <span class="section-num">10 /</span>
+      <h2 class="section-title">Historique mensuel</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="history-table fade-in d5">
+      <table>
+        <thead>
+          <tr>
+            <th>Mois</th>
+            <th>PEA</th>
+            <th>AV</th>
+            <th>PEE</th>
+            <th>CTO</th>
+            <th>Crypto</th>
+            <th>Liquide</th>
+            <th>Dette</th>
+            <th>Net</th>
+            <th>Δ Total</th>
+            <th>Δ Effort</th>
+            <th>Δ Marché</th>
+            <th>PV latente</th>
+            <th>Revenu</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable"></tbody>
+      </table>
+    </section>
+
+    <!-- EXPORT -->
+    <div class="export-bar fade-in d5">
+      <span class="export-label">Exporter pour IA / tableur</span>
+      <button class="export-btn-pill" onclick="exportHistoryCSV()">
+        ⬇ CSV
+      </button>
+      <button class="export-btn-pill" onclick="exportHistoryMarkdown()">
+        ⬇ Markdown (IA)
+      </button>
+      <button class="export-btn-pill" onclick="copyHistoryMarkdown()">
+        ⎘ Copier pour IA
+      </button>
+    </div>
+
+    <div class="note">
+      Dashboard indicatif à usage personnel. Les projections supposent un apport constant et un rendement régulier, ce qui ne reflète pas la volatilité réelle des marchés.
+    </div>
+  </div>
+</div>
+
+<script>
+  let charts = {};
+  let currentRows = null;
+
+  // ========== UTILS ==========
+  const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(n));
+  const fmtK = (n) => (Math.abs(n) >= 1000 ? (n/1000).toFixed(1).replace('.', ',') + ' k' : fmt(n));
+  const fmtSigned = (n) => (n >= 0 ? '+' : '') + fmt(n);
+  const monthLabel = (d) => {
+    const dt = new Date(d);
+    return isNaN(dt) ? d : dt.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+  };
+  const setStatus = (text, cls = '') => {
+    const el = document.getElementById('status');
+    el.textContent = text;
+    el.className = 'status ' + cls;
+  };
+
+  // ========== DATE PARSING ==========
+  const MOIS_FR = {
+    'janvier':'01','janv':'01','jan':'01',
+    'février':'02','fevrier':'02','févr':'02','fevr':'02','fev':'02','feb':'02',
+    'mars':'03','mar':'03',
+    'avril':'04','avr':'04','apr':'04',
+    'mai':'05',
+    'juin':'06','jun':'06',
+    'juillet':'07','juil':'07','jul':'07',
+    'août':'08','aout':'08',
+    'septembre':'09','sept':'09','sep':'09',
+    'octobre':'10','oct':'10',
+    'novembre':'11','nov':'11',
+    'décembre':'12','decembre':'12','déc':'12','dec':'12',
+  };
+  function parseDate(s) {
+    if (!s) return '';
+    s = String(s).trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    m = s.toLowerCase().match(/^(\d{1,2})\s+([a-zéèêû.]+)\s+(\d{4})/);
+    if (m) {
+      const day = m[1].padStart(2, '0');
+      const mk = m[2].replace('.', '');
+      const month = MOIS_FR[mk] || MOIS_FR[mk.replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')];
+      if (month) return `${m[3]}-${month}-${day}`;
+    }
+    return s;
+  }
+
+  // ========== CSV PARSING ==========
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) throw new Error('CSV vide ou sans données.');
+    
+    // Détecter séparateur (; ou ,)
+    const firstLine = lines[0];
+    const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+    
+    const rawHeaders = lines[0].split(sep).map(h => h.trim());
+    const find = (re) => rawHeaders.findIndex(h => re.test(h));
+
+    const colMap = {
+      date: find(/^date$/i),
+      cc: find(/compte.*courant|livret/i),
+      crypto: rawHeaders.findIndex(h => /^crypto$/i.test(h)),
+      cryptoInv: find(/crypto.*invest/i),
+      pea: rawHeaders.findIndex(h => /^pea$/i.test(h)),
+      peaInv: find(/pea.*invest/i),
+      cto: rawHeaders.findIndex(h => /^cto$/i.test(h)),
+      ctoInv: find(/cto.*invest/i),
+      av: rawHeaders.findIndex(h => /^av$/i.test(h)),
+      avInv: find(/av.*invest/i),
+      pee: rawHeaders.findIndex(h => /^pee$/i.test(h)),
+      peeInv: find(/pee.*invest/i),
+      dette: find(/dette|pret/i),
+      revenu: find(/revenu/i),
+      caution: find(/caution/i),
+    };
+
+    const required = ['date', 'cc', 'crypto', 'pea', 'peaInv', 'cto', 'ctoInv', 'av', 'avInv', 'pee', 'peeInv', 'dette'];
+    for (const k of required) {
+      if (colMap[k] === -1) throw new Error(`Colonne manquante : ${k}`);
+    }
+
+    const parseNum = (s) => {
+      if (!s || s.trim() === '') return 0;
+      return parseFloat(s.replace(/\s/g, '').replace(',', '.')) || 0;
+    };
+
+    const rows = lines.slice(1).map(line => {
+      const cells = line.split(sep).map(c => c.trim());
+      return {
+        Date: parseDate(cells[colMap.date]),
+        Liquidites: parseNum(cells[colMap.cc]),
+        Crypto: parseNum(cells[colMap.crypto]),
+        Crypto_Invest: colMap.cryptoInv >= 0 ? parseNum(cells[colMap.cryptoInv]) : null,
+        PEA: parseNum(cells[colMap.pea]),
+        PEA_Invest: parseNum(cells[colMap.peaInv]),
+        CTO: parseNum(cells[colMap.cto]),
+        CTO_Invest: parseNum(cells[colMap.ctoInv]),
+        AV: parseNum(cells[colMap.av]),
+        AV_Invest: parseNum(cells[colMap.avInv]),
+        PEE: parseNum(cells[colMap.pee]),
+        PEE_Invest: parseNum(cells[colMap.peeInv]),
+        Dette: parseNum(cells[colMap.dette]),
+        Revenu: colMap.revenu >= 0 ? parseNum(cells[colMap.revenu]) : null,
+        Caution: colMap.caution >= 0 ? parseNum(cells[colMap.caution]) : 0,
+      };
+    });
+
+    rows.sort((a, b) => a.Date.localeCompare(b.Date));
+    return rows;
+  }
+
+  // ========== CALCULATIONS ==========
+  const totalAssets = r => r.PEA + r.AV + r.PEE + r.CTO + r.Crypto + r.Liquidites + (r.Caution || 0);
+  const netOf = r => totalAssets(r) - r.Dette;
+  const investedValue = r => r.PEA + r.AV + r.PEE + r.CTO + r.Crypto;
+  const capInvested = r => r.PEA_Invest + r.AV_Invest + r.PEE_Invest + r.CTO_Invest + (r.Crypto_Invest || 0);
+
+  function stats(rows) {
+    const latest = rows[rows.length - 1];
+    const first = rows[0];
+    const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+    const last12 = rows.slice(-13); // on prend 13 points pour avoir 12 deltas
+
+    // Deltas
+    const deltasNet = [];
+    const deltasCapInv = [];
+    const deltasPV = [];
+    for (let i = 1; i < last12.length; i++) {
+      deltasNet.push(netOf(last12[i]) - netOf(last12[i-1]));
+      deltasCapInv.push(capInvested(last12[i]) - capInvested(last12[i-1]));
+      deltasPV.push((investedValue(last12[i]) - capInvested(last12[i])) - (investedValue(last12[i-1]) - capInvested(last12[i-1])));
+    }
+    const avg = arr => arr.length > 0 ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
+    const std = arr => {
+      if (arr.length < 2) return 0;
+      const m = avg(arr);
+      return Math.sqrt(arr.reduce((a,b) => a + (b-m)**2, 0) / arr.length);
+    };
+
+    // Revenu moyen
+    const validRevs = rows.slice(-12).map(r => r.Revenu).filter(v => v && v > 0);
+    const avgRev = validRevs.length > 0 ? avg(validRevs) : 0;
+
+    // Meilleur mois
+    let bestIdx = 0, worstIdx = 0;
+    for (let i = 0; i < deltasNet.length; i++) {
+      if (deltasNet[i] > deltasNet[bestIdx]) bestIdx = i;
+      if (deltasNet[i] < deltasNet[worstIdx]) worstIdx = i;
+    }
+    // Note : on map sur rows.slice(-12) (pas last12 qui a 13 points)
+    const recentRows = rows.slice(-12);
+
+    return {
+      latest, first, previous,
+      avgDelta: avg(deltasNet),
+      avgEffort: avg(deltasCapInv),
+      avgMarket: avg(deltasPV),
+      avgRev,
+      volatility: std(deltasNet),
+      bestMonth: { delta: deltasNet[bestIdx], date: recentRows[bestIdx]?.Date },
+      worstMonth: { delta: deltasNet[worstIdx], date: recentRows[worstIdx]?.Date },
+      totalMonths: rows.length,
+      monthsSpan: (new Date(latest.Date) - new Date(first.Date)) / (1000 * 60 * 60 * 24 * 30.44),
+    };
+  }
+
+  // ========== RENDER ==========
+  function renderDashboard(rows) {
+    currentRows = rows;
+    const s = stats(rows);
+    const { latest, first, previous, avgDelta, avgEffort, avgMarket, avgRev, volatility, bestMonth, worstMonth, totalMonths, monthsSpan } = s;
+
+    const latestTotal = totalAssets(latest);
+    const latestNet = netOf(latest);
+    const latestInvVal = investedValue(latest);
+    const latestCapInv = capInvested(latest);
+    const latestPV = latestInvVal - latestCapInv;
+    const latestPVPct = latestCapInv > 0 ? (latestPV / latestCapInv) * 100 : 0;
+
+    // HEADER
+    document.getElementById('lastUpdate').textContent = new Date(latest.Date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    document.getElementById('avgRev').textContent = fmt(avgRev);
+
+    // HERO
+    document.getElementById('net-worth').textContent = fmt(latestNet);
+    document.getElementById('assets-total').textContent = fmt(latestTotal) + ' €';
+    document.getElementById('debt-total').textContent = '− ' + fmt(latest.Dette) + ' €';
+    document.getElementById('invested-total').textContent = fmt(latestInvVal) + ' €';
+    document.getElementById('liquid-total').textContent = fmt(latest.Liquidites) + ' €';
+    const cautionEl = document.getElementById('caution-total');
+    if (latest.Caution > 0) {
+      cautionEl.textContent = fmt(latest.Caution) + ' €';
+    } else {
+      cautionEl.closest('.item').style.display = 'none';
+    }
+
+    if (previous) {
+      const prevNet = netOf(previous);
+      const delta = latestNet - prevNet;
+      const pct = prevNet !== 0 ? ((delta / Math.abs(prevNet)) * 100).toFixed(1).replace('.', ',') : '—';
+      const hd = document.getElementById('heroDelta');
+      hd.className = 'hero-delta ' + (delta >= 0 ? 'up' : 'down');
+      hd.innerHTML = `${delta >= 0 ? '↑' : '↓'} ${fmtSigned(delta)} € · ${pct} % sur 1 mois`;
+    } else {
+      document.getElementById('heroDelta').style.display = 'none';
+    }
+
+    // PERF HERO
+    document.getElementById('capInvested').textContent = fmt(latestCapInv);
+    document.getElementById('capCurrent').textContent = fmt(latestInvVal);
+    document.getElementById('pvAbs').textContent = fmtSigned(latestPV);
+    document.getElementById('pvPct').textContent = (latestPV >= 0 ? '+' : '') + latestPVPct.toFixed(1).replace('.', ',');
+    document.getElementById('pvCell').classList.toggle('negative', latestPV < 0);
+
+    // POSTE LIST
+    const postes = [
+      { key:'PEA',    invKey:'PEA_Invest',    color:'#1a1815', label:'PEA', note:'Bourso' },
+      { key:'AV',     invKey:'AV_Invest',     color:'#5e4820', label:'Assurance-vie', note:'Mon Petit Placement' },
+      { key:'PEE',    invKey:'PEE_Invest',    color:'#8b6b2f', label:'PEE', note:'Amundi' },
+      { key:'CTO',    invKey:'CTO_Invest',    color:'#b08a42', label:'CTO', note:'Revolut + Bourso' },
+      { key:'Crypto', invKey:'Crypto_Invest', color:'#a85a2a', label:'Crypto', note:'Coinbase + Rayn' },
+    ];
+    const maxV = Math.max(...postes.map(p => {
+      const v = latest[p.key] || 0;
+      const i = latest[p.invKey] || 0;
+      return Math.max(v, i);
+    }));
+    const posteList = document.getElementById('posteList');
+    posteList.innerHTML = '';
+    const posteMetrics = [];
+    postes.forEach(p => {
+      const valeur = latest[p.key] || 0;
+      const invest = latest[p.invKey];
+      const hasInvest = invest !== null && invest !== undefined && invest > 0;
+      const pv = hasInvest ? valeur - invest : null;
+      const pvPctP = hasInvest ? (pv / invest) * 100 : null;
+      posteMetrics.push({ ...p, valeur, invest: invest || 0, pv, pvPct: pvPctP });
+      const valeurBarW = (valeur / maxV) * 100;
+      const investBarW = hasInvest ? (invest / maxV) * 100 : 0;
+      const row = document.createElement('div');
+      row.className = 'poste-row';
+      if (!hasInvest) {
+        row.innerHTML = `
+          <div class="poste-name"><span class="poste-dot" style="background:${p.color}"></span>${p.label}</div>
+          <div class="poste-bar-cell"><div class="poste-bar-value" style="width:${valeurBarW}%; background:${p.color}; opacity:0.85;"></div></div>
+          <div class="poste-amount dim">—</div>
+          <div class="poste-amount">${fmt(valeur)} €</div>
+          <div class="poste-pv" style="color:var(--ink-mute);font-style:italic;">non suivi</div>
+          <div class="poste-pct" style="color:var(--ink-mute);background:transparent;">—</div>
+        `;
+      } else {
+        const pvCls = pv >= 0 ? 'pos' : 'neg';
+        row.innerHTML = `
+          <div class="poste-name"><span class="poste-dot" style="background:${p.color}"></span>${p.label}</div>
+          <div class="poste-bar-cell">
+            <div class="poste-bar-invest" style="width:${investBarW}%"></div>
+            <div class="poste-bar-value" style="width:${valeurBarW}%; background:${p.color}; opacity:0.85;"></div>
+          </div>
+          <div class="poste-amount dim">${fmt(invest)} €</div>
+          <div class="poste-amount">${fmt(valeur)} €</div>
+          <div class="poste-pv ${pvCls}">${fmtSigned(pv)} €</div>
+          <div class="poste-pct ${pvCls}">${pv >= 0 ? '+' : ''}${pvPctP.toFixed(1).replace('.', ',')} %</div>
+        `;
+      }
+      posteList.appendChild(row);
+    });
+
+    // KPIs — LIGNE 1
+    document.getElementById('kpiPerf').innerHTML = (latestPV >= 0 ? '+' : '') + latestPVPct.toFixed(1).replace('.', ',') + '<small>%</small>';
+    document.getElementById('kpiPerfSub').textContent = fmtSigned(latestPV) + ' € de plus-value';
+
+    const tracked = posteMetrics.filter(p => p.pvPct !== null);
+    const sorted = [...tracked].sort((a, b) => b.pvPct - a.pvPct);
+    const best = sorted[0];
+    const worst = sorted[sorted.length - 1];
+    document.getElementById('kpiBest').textContent = `${best.label} / ${worst.label}`;
+    document.getElementById('kpiBestSub').innerHTML = `<span style="color:var(--positive);">+${best.pvPct.toFixed(1).replace('.', ',')} %</span> / <span style="color:${worst.pvPct >= 0 ? 'var(--positive)' : 'var(--danger)'};">${worst.pvPct.toFixed(1).replace('.', ',')} %</span>`;
+
+    document.getElementById('kpiDelta').innerHTML = fmt(avgDelta) + '<small> €</small>';
+    document.getElementById('kpiDeltaSub').textContent = `Moyenne sur 12 derniers mois`;
+
+    document.getElementById('kpiEffort').innerHTML = fmt(avgEffort) + '<small> €</small>';
+    document.getElementById('kpiEffortSub').textContent = `Apports nets mensuels moyens`;
+
+    // KPIs — LIGNE 2
+    const saveRate = avgRev > 0 ? (avgEffort / avgRev) * 100 : 0;
+    document.getElementById('kpiSaveRate').innerHTML = saveRate.toFixed(0) + '<small>%</small>';
+    let saveRateClass = 'kpi-note';
+    let saveRateText = '';
+    if (saveRate >= 30) { saveRateClass = 'kpi-note pos'; saveRateText = 'Excellent · > 30 %'; }
+    else if (saveRate >= 15) { saveRateText = 'Bien · 15-30 %'; }
+    else { saveRateClass = 'kpi-note neg'; saveRateText = 'À améliorer'; }
+    document.getElementById('kpiSaveRateSub').className = saveRateClass;
+    document.getElementById('kpiSaveRateSub').textContent = saveRateText;
+
+    document.getElementById('kpiMarket').innerHTML = (avgMarket >= 0 ? '+' : '') + fmt(avgMarket) + '<small> €</small>';
+    const marketPct = avgEffort > 0 ? (avgMarket / avgEffort) * 100 : 0;
+    document.getElementById('kpiMarketSub').textContent = avgMarket >= 0 ? `Le marché ajoute ${marketPct.toFixed(0)} % à vos apports` : 'Marché négatif en moyenne';
+
+    const ratioInv = latestTotal > 0 ? (latestInvVal / latestTotal) * 100 : 0;
+    document.getElementById('kpiRatio').innerHTML = ratioInv.toFixed(0) + '<small>%</small>';
+    document.getElementById('kpiRatioSub').textContent = `${fmt(latestInvVal)} € investis / ${fmt(latestTotal)} € actifs`;
+
+    // Runway : estimation dépenses = revenu - effort d'épargne
+    const estDepenses = Math.max(avgRev - avgEffort, 500);
+    const runway = estDepenses > 0 ? latest.Liquidites / estDepenses : 0;
+    document.getElementById('kpiRunway').innerHTML = runway.toFixed(1).replace('.', ',') + '<small> mois</small>';
+    document.getElementById('kpiRunwaySub').textContent = `Liquide dispo / ${fmt(estDepenses)} € est. (caution exclue)`;
+
+    // KPIs — LIGNE 3
+    document.getElementById('kpiDebt').innerHTML = fmt(latest.Dette) + '<small> €</small>';
+    const firstDette = rows[0].Dette;
+    document.getElementById('kpiDebtSub').textContent = `Sur ${fmt(firstDette)} € initiaux · ${Math.round((firstDette - latest.Dette) / firstDette * 100)} % remboursés`;
+
+    document.getElementById('kpiMonths').innerHTML = totalMonths + '<small> mois</small>';
+    document.getElementById('kpiMonthsSub').textContent = `Depuis ${monthLabel(first.Date)}`;
+
+    document.getElementById('kpiBestMonth').innerHTML = fmtSigned(bestMonth.delta) + '<small> €</small>';
+    document.getElementById('kpiBestMonthSub').textContent = bestMonth.date ? `En ${monthLabel(bestMonth.date)}` : '—';
+
+    document.getElementById('kpiVol').innerHTML = '±' + fmt(volatility) + '<small> €</small>';
+    document.getElementById('kpiVolSub').textContent = `Écart-type des variations mensuelles`;
+
+    // ===== CHARTS =====
+    Object.values(charts).forEach(c => c && c.destroy());
+    charts = {};
+
+    const histLabels = rows.map(r => monthLabel(r.Date));
+    const histInvested = rows.map(capInvested);
+    const histValue = rows.map(investedValue);
+
+    // ===== DÉCOMPOSITION DELTA =====
+    // Pour chaque mois M :
+    //   PV latente M = investedValue(M) - capInvested(M)
+    //   Δ marché = PV(M) - PV(M-1)  → ce que le marché a apporté
+    //   Δ épargne = Δ(capInvested) + Δ(Liquidites) + Δ(Caution) - Δ(Dette) → votre effort réel
+    //   Δ total = netOf(M) - netOf(M-1) = Δ épargne + Δ marché
+
+    const pvLatente = rows.map(r => investedValue(r) - capInvested(r));
+
+    if (previous) {
+      const prevIdx = rows.length - 2;
+      const pvM = pvLatente[rows.length - 1];
+      const pvPrev = pvLatente[prevIdx];
+      const deltaMarche = pvM - pvPrev;
+      const deltaTotal = netOf(latest) - netOf(previous);
+      const deltaEpargne = deltaTotal - deltaMarche;
+
+      // Affichage hero delta
+      const dtEl = document.getElementById('deltaTotal');
+      dtEl.textContent = (deltaTotal >= 0 ? '+' : '') + fmt(deltaTotal) + ' €';
+      dtEl.className = 'delta-value mono ' + (deltaTotal >= 0 ? 'pos' : 'neg');
+      document.getElementById('deltaTotalSub').textContent =
+        `${monthLabel(previous.Date)} → ${monthLabel(latest.Date)}`;
+
+      const deEl = document.getElementById('deltaEpargne');
+      deEl.textContent = (deltaEpargne >= 0 ? '+' : '') + fmt(deltaEpargne) + ' €';
+      deEl.className = 'delta-value mono ' + (deltaEpargne >= 0 ? 'pos' : 'neg');
+      document.getElementById('deltaEpargneSub').textContent =
+        'Apports + dette remboursée · hors marché';
+
+      const dmEl = document.getElementById('deltaMarche');
+      dmEl.textContent = (deltaMarche >= 0 ? '+' : '') + fmt(deltaMarche) + ' €';
+      dmEl.className = 'delta-value mono ' + (deltaMarche >= 0 ? 'pos' : 'neg');
+      document.getElementById('deltaMarcheSub').textContent =
+        deltaMarche >= 0 ? 'Marchés favorables ce mois' : 'Marchés défavorables ce mois';
+    }
+
+    // Graphique historique décomposé (barres empilées)
+    const deltaEpargneHist = rows.map((r, i) => {
+      if (i === 0) return 0;
+      const prev = rows[i - 1];
+      const dtotal = netOf(r) - netOf(prev);
+      const dmarche = pvLatente[i] - pvLatente[i - 1];
+      return dtotal - dmarche; // effort réel
+    });
+    const deltaMarcheHist = rows.map((r, i) => {
+      if (i === 0) return 0;
+      return pvLatente[i] - pvLatente[i - 1];
+    });
+
+    charts.delta = new Chart(document.getElementById('deltaChart'), {
+      type: 'bar',
+      data: {
+        labels: histLabels,
+        datasets: [
+          {
+            label: 'Votre effort (épargne)',
+            data: deltaEpargneHist,
+            backgroundColor: deltaEpargneHist.map(v => v >= 0 ? 'rgba(61, 107, 69, 0.80)' : 'rgba(147, 58, 42, 0.80)'),
+            borderColor: deltaEpargneHist.map(v => v >= 0 ? '#3d6b45' : '#933a2a'),
+            borderWidth: 1, borderRadius: 2, stack: 'stack',
+          },
+          {
+            label: 'Contribution marché',
+            data: deltaMarcheHist,
+            backgroundColor: deltaMarcheHist.map(v => v >= 0 ? 'rgba(139, 107, 47, 0.60)' : 'rgba(147, 58, 42, 0.40)'),
+            borderColor: deltaMarcheHist.map(v => v >= 0 ? '#8b6b2f' : '#933a2a'),
+            borderWidth: 1, borderRadius: 2, stack: 'stack',
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: {
+            position: 'top', align: 'end',
+            labels: { font: { family: 'JetBrains Mono', size: 11 }, color: '#4a4640', usePointStyle: true, padding: 16 }
+          },
+          tooltip: {
+            backgroundColor: '#1a1815',
+            titleFont: { family: 'Fraunces', size: 13, style: 'italic' },
+            bodyFont: { family: 'JetBrains Mono', size: 12 },
+            padding: 12,
+            callbacks: {
+              afterBody: (items) => {
+                const idx = items[0].dataIndex;
+                const total = deltaEpargneHist[idx] + deltaMarcheHist[idx];
+                return [`─────────`, ` Total : ${total >= 0 ? '+' : ''}${fmt(total)} €`];
+              },
+              label: (ctx) => {
+                const v = ctx.parsed.y;
+                return ` ${ctx.dataset.label} : ${v >= 0 ? '+' : ''}${fmt(v)} €`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#857e72', maxTicksLimit: 12, maxRotation: 0 } },
+          y: { stacked: true, grid: { color: '#d4cec0' }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#857e72', callback: v => (v >= 0 ? '+' : '') + fmt(v) + '€' } }
+        }
+      }
+    });
+
+    charts.investVsValue = new Chart(document.getElementById('investVsValueChart'), {
+      type: 'line',
+      data: {
+        labels: histLabels,
+        datasets: [
+          { label: 'Valeur de marché', data: histValue, borderColor: '#1a1815', backgroundColor: 'rgba(26, 24, 21, 0.08)', borderWidth: 2.5, tension: 0.35, pointRadius: 2.5, pointHoverRadius: 6, fill: true },
+          { label: 'Capital investi', data: histInvested, borderColor: '#8b6b2f', backgroundColor: 'rgba(139, 107, 47, 0.10)', borderWidth: 2, borderDash: [6, 5], tension: 0.35, pointRadius: 2, pointHoverRadius: 5, fill: '-1' }
+        ]
+      },
+      options: chartBaseOpts('€')
+    });
+
+    const histPV = rows.map(r => investedValue(r) - capInvested(r));
+    charts.pv = new Chart(document.getElementById('pvChart'), {
+      type: 'bar',
+      data: {
+        labels: histLabels,
+        datasets: [{
+          data: histPV,
+          backgroundColor: histPV.map(v => v >= 0 ? 'rgba(61, 107, 69, 0.75)' : 'rgba(147, 58, 42, 0.75)'),
+          borderColor: histPV.map(v => v >= 0 ? '#3d6b45' : '#933a2a'),
+          borderWidth: 1, borderRadius: 2,
+        }]
+      },
+      options: {
+        ...chartBaseOpts('€'),
+        plugins: {
+          legend: { display: false },
+          tooltip: chartBaseOpts('€').plugins.tooltip
+        }
+      }
+    });
+
+    const histNet = rows.map(netOf);
+    const histLiquid = rows.map(r => r.Liquidites);
+    charts.history = new Chart(document.getElementById('historyChart'), {
+      type: 'line',
+      data: {
+        labels: histLabels,
+        datasets: [
+          { label: 'Patrimoine net', data: histNet, borderColor: '#1a1815', backgroundColor: 'rgba(26, 24, 21, 0.08)', borderWidth: 2.5, tension: 0.35, pointRadius: 2.5, pointHoverRadius: 6, fill: true },
+          { label: 'Investi (valeur)', data: histValue, borderColor: '#8b6b2f', backgroundColor: 'transparent', borderWidth: 2, borderDash: [5, 4], tension: 0.35, pointRadius: 2, pointHoverRadius: 5 },
+          { label: 'Liquidités', data: histLiquid, borderColor: '#857e72', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [2, 3], tension: 0.35, pointRadius: 2, pointHoverRadius: 5 }
+        ]
+      },
+      options: chartBaseOpts('€')
+    });
+
+    // ===== ALLOCATION =====
+    const allocData = [
+      { name: 'PEA',              value: latest.PEA,           color: '#1a1815' },
+      { name: 'Assurance-vie',    value: latest.AV,            color: '#5e4820' },
+      { name: 'PEE',              value: latest.PEE,           color: '#8b6b2f' },
+      { name: 'CTO',              value: latest.CTO,           color: '#b08a42' },
+      { name: 'Crypto',           value: latest.Crypto,        color: '#a85a2a' },
+      { name: 'Liquidités',       value: latest.Liquidites,    color: '#857e72' },
+      { name: 'Caution appart.',  value: latest.Caution || 0,  color: '#4a7b8c' },
+    ].filter(a => a.value > 0).sort((a, b) => b.value - a.value);
+
+    const list = document.getElementById('allocList');
+    list.innerHTML = '';
+    const notes = {
+      'PEA': 'Bourso', 'Assurance-vie': 'Mon Petit Placement', 'PEE': 'Amundi',
+      'CTO': 'Revolut + Bourso', 'Crypto': 'Coinbase + Rayn',
+      'Liquidités': 'Courant + Livret', 'Caution appart.': 'Bloqué · récupérable'
+    };
+    allocData.forEach(a => {
+      const p = (a.value / latestTotal * 100).toFixed(1).replace('.', ',');
+      const row = document.createElement('div');
+      row.className = 'alloc-row';
+      row.innerHTML = `
+        <span class="alloc-dot" style="background:${a.color}"></span>
+        <div class="alloc-name">${a.name}<small>${notes[a.name]}</small></div>
+        <span class="alloc-amount">${fmt(a.value)} €</span>
+        <span class="alloc-pct">${p} %</span>
+      `;
+      list.appendChild(row);
+    });
+
+    charts.alloc = new Chart(document.getElementById('allocChart'), {
+      type: 'doughnut',
+      data: {
+        labels: allocData.map(a => a.name),
+        datasets: [{
+          data: allocData.map(a => a.value),
+          backgroundColor: allocData.map(a => a.color),
+          borderColor: '#f4f1ea', borderWidth: 3, hoverOffset: 12,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1815',
+            titleFont: { family: 'Fraunces', size: 14, style: 'italic' },
+            bodyFont: { family: 'JetBrains Mono', size: 12 }, padding: 12,
+            callbacks: {
+              label: (ctx) => ' ' + fmt(ctx.parsed) + ' € · ' + (ctx.parsed/latestTotal*100).toFixed(1) + ' %'
+            }
+          }
+        }
+      }
+    });
+
+    // ===== HISTORY TABLE =====
+    const tbody = document.getElementById('historyTable');
+    tbody.innerHTML = '';
+    const displayRows = [...rows].reverse();
+    // Pré-calculer les PV latentes dans l'ordre chronologique
+    const pvByDate = {};
+    rows.forEach(r => { pvByDate[r.Date] = investedValue(r) - capInvested(r); });
+
+    displayRows.forEach((r, i) => {
+      const net = netOf(r);
+      const pvM = pvByDate[r.Date];
+      const pvStr = (pvM >= 0 ? '+' : '') + fmt(pvM);
+      const pvClass = pvM >= 0 ? 'delta-pos' : 'delta-neg';
+
+      // Δ total, Δ effort, Δ marché
+      let deltaTotalCell = '<td style="color:var(--ink-mute);">—</td>';
+      let deltaEffortCell = '<td style="color:var(--ink-mute);">—</td>';
+      let deltaMarcheCell = '<td style="color:var(--ink-mute);">—</td>';
+
+      if (i + 1 < displayRows.length) {
+        const prev = displayRows[i + 1];
+        const pvPrev = pvByDate[prev.Date];
+        const dTotal = net - netOf(prev);
+        const dMarche = pvM - pvPrev;
+        const dEffort = dTotal - dMarche;
+
+        const cls = (v) => v >= 0 ? 'delta-pos' : 'delta-neg';
+        deltaTotalCell  = `<td class="${cls(dTotal)}">${fmtSigned(dTotal)}</td>`;
+        deltaEffortCell = `<td class="${cls(dEffort)}">${fmtSigned(dEffort)}</td>`;
+        deltaMarcheCell = `<td class="${cls(dMarche)}">${fmtSigned(dMarche)}</td>`;
+      }
+
+      const revenu = r.Revenu > 0 ? fmt(r.Revenu) + ' €' : '<span style="color:var(--ink-mute);">—</span>';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:left;">${monthLabel(r.Date)}</td>
+        <td>${fmt(r.PEA)}</td>
+        <td>${fmt(r.AV)}</td>
+        <td>${fmt(r.PEE)}</td>
+        <td>${fmt(r.CTO)}</td>
+        <td>${fmt(r.Crypto)}</td>
+        <td>${fmt(r.Liquidites)}</td>
+        <td style="color:var(--ink-mute);">${fmt(r.Dette)}</td>
+        <td class="highlight">${fmt(net)}</td>
+        ${deltaTotalCell}
+        ${deltaEffortCell}
+        ${deltaMarcheCell}
+        <td class="${pvClass}">${pvStr}</td>
+        <td style="color:var(--ink-soft);">${revenu}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // ===== PROJECTIONS =====
+    // Set default apport = effort mensuel
+    const apportSlider = document.getElementById('projApport');
+    apportSlider.value = Math.max(0, Math.round(avgEffort / 50) * 50);
+    setupProjections(rows);
+
+    document.getElementById('helpBox').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('clearBtn').style.display = '';
+  }
+
+  function chartBaseOpts(unit) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { font: { family: 'JetBrains Mono', size: 11 }, color: '#4a4640', usePointStyle: true, padding: 16 } },
+        tooltip: {
+          backgroundColor: '#1a1815',
+          titleFont: { family: 'Fraunces', size: 13, style: 'italic' },
+          bodyFont: { family: 'JetBrains Mono', size: 12 }, padding: 12,
+          callbacks: { label: (ctx) => ' ' + (ctx.dataset.label || 'Valeur') + ' : ' + fmt(ctx.parsed.y) + ' ' + unit }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#d4cec0' }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#857e72', maxTicksLimit: 12, maxRotation: 0 } },
+        y: { grid: { color: '#d4cec0' }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#857e72', callback: v => fmtK(v) + unit } }
+      }
+    };
+  }
+
+  // ===== PROJECTIONS =====
+  function setupProjections(rows) {
+    const apportInput = document.getElementById('projApport');
+    const rateInput = document.getElementById('projRate');
+    const yearsInput = document.getElementById('projYears');
+
+    function update() {
+      const apport = parseFloat(apportInput.value);
+      const ratePct = parseFloat(rateInput.value);
+      const rate = ratePct / 100;
+      const years = parseInt(yearsInput.value);
+      document.getElementById('projApportVal').textContent = fmt(apport);
+      document.getElementById('projRateVal').textContent = ratePct.toFixed(1).replace('.', ',');
+      document.getElementById('projYearsVal').textContent = years;
+
+      renderProjection(rows, apport, rate, years);
+    }
+
+    apportInput.oninput = update;
+    rateInput.oninput = update;
+    yearsInput.oninput = update;
+    update();
+  }
+
+  function renderProjection(rows, apportMonthly, rateAnnual, years) {
+    const cap = netOf(rows[rows.length - 1]);
+    const monthlyRate = rateAnnual / 12;
+    const currentAge = 29;
+
+    // 3 scénarios : pessimiste, central, optimiste
+    const scenarios = [
+      { name: 'Pessimiste', rate: rateAnnual * 0.5, color: '#857e72', dash: [4, 4] },
+      { name: 'Central', rate: rateAnnual, color: '#8b6b2f', dash: null },
+      { name: 'Optimiste', rate: rateAnnual * 1.5, color: '#3d6b45', dash: [4, 4] },
+    ];
+
+    const datasets = [];
+    const labels = [];
+    for (let y = 0; y <= years; y++) labels.push(`${currentAge + y} ans`);
+
+    const centralPoints = [];
+
+    scenarios.forEach(sc => {
+      const mr = sc.rate / 12;
+      const points = [cap];
+      let capital = cap;
+      for (let y = 1; y <= years; y++) {
+        for (let m = 0; m < 12; m++) {
+          capital = capital * (1 + mr) + apportMonthly;
+        }
+        points.push(capital);
+      }
+      if (sc.name === 'Central') {
+        centralPoints.push(...points);
+      }
+      datasets.push({
+        label: sc.name,
+        data: points,
+        borderColor: sc.color,
+        backgroundColor: sc.name === 'Central' ? 'rgba(139, 107, 47, 0.10)' : 'transparent',
+        borderWidth: sc.name === 'Central' ? 2.5 : 1.5,
+        borderDash: sc.dash || [],
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        fill: sc.name === 'Central',
+      });
+    });
+
+    if (charts.proj) charts.proj.destroy();
+    charts.proj = new Chart(document.getElementById('projChart'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        ...chartBaseOpts('€'),
+        plugins: {
+          ...chartBaseOpts('€').plugins,
+          tooltip: {
+            ...chartBaseOpts('€').plugins.tooltip,
+            callbacks: {
+              label: (ctx) => ' ' + ctx.dataset.label + ' : ' + fmtK(ctx.parsed.y) + '€'
+            }
+          }
+        }
+      }
+    });
+
+    // Milestones : 5, 10, 20, 30 ans (ou horizon max)
+    const milestoneYears = [5, 10, 20, 30].filter(y => y <= years).concat(years > 30 ? [] : []);
+    if (!milestoneYears.includes(years)) milestoneYears.push(years);
+    const uniqueMs = [...new Set(milestoneYears)].sort((a,b) => a-b).slice(0, 4);
+
+    const msCont = document.getElementById('projMilestones');
+    msCont.innerHTML = '';
+    uniqueMs.forEach(ms => {
+      const val = centralPoints[ms];
+      const pctVsCap = cap > 0 ? (val / cap).toFixed(1).replace('.', ',') : '—';
+      const totalApports = apportMonthly * 12 * ms;
+      const growth = val - cap - totalApports;
+      const div = document.createElement('div');
+      div.className = 'milestone';
+      div.innerHTML = `
+        <div class="milestone-age">${currentAge + ms} ans · dans ${ms} ans</div>
+        <div class="milestone-value">${fmtK(val)}€</div>
+        <div class="milestone-sub">× ${pctVsCap} · dont ${fmtK(growth)}€ de marché</div>
+      `;
+      msCont.appendChild(div);
+    });
+  }
+
+  // ========== GOOGLE SHEET SOURCE ==========
+  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTLOf9bJmtlJeZ49jK47liS0jzMvUOu_GTF-eMuD_5QoNWIiukuGoUeqkjWXh-Meseo1ku1cxbb6I-6/pub?gid=0&single=true&output=csv';
+  const STORAGE_KEY = 'patrimoine_sheet_cache_v14';
+
+  async function loadFromSheet() {
+    setStatus('Connexion au Google Sheet...', '');
+
+    const DIRECT = SHEET_URL;
+    const PROXIES = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`,
+      `https://corsproxy.io/?${encodeURIComponent(SHEET_URL)}`,
+      `https://proxy.cors.sh/${SHEET_URL}`,
+      `https://thingproxy.freeboard.io/fetch/${SHEET_URL}`,
+    ];
+
+    let text = null;
+    let source = '';
+
+    // Tentative accès direct
+    try {
+      const res = await fetch(DIRECT, { redirect: 'follow', mode: 'cors' });
+      if (res.ok) { text = await res.text(); source = 'direct'; }
+    } catch {}
+
+    // Tentative proxys en cascade
+    if (!text) {
+      for (const proxy of PROXIES) {
+        try {
+          const res = await fetch(proxy, { redirect: 'follow' });
+          if (res.ok) {
+            const t = await res.text();
+            if (t && t.length > 50 && t.includes(',')) {
+              text = t; source = new URL(proxy).hostname; break;
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (text) {
+      try {
+        const rows = parseCSV(text);
+        if (rows.length === 0) throw new Error('Sheet vide ou mal formaté.');
+        renderDashboard(rows);
+        try { localStorage.setItem(STORAGE_KEY, text); } catch {}
+        setStatus(`✓ Google Sheet · ${rows.length} mois · via ${source}`, 'ok');
+        return;
+      } catch (parseErr) {
+        console.error('Parse error:', parseErr);
+      }
+    }
+
+    // Fallback cache local
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (cached) {
+      try {
+        const rows = parseCSV(cached);
+        renderDashboard(rows);
+        setStatus(`⚠ Sheet inaccessible (CORS) · cache local · ${rows.length} mois`, '');
+        return;
+      } catch {}
+    }
+
+    // Échec total → invite à charger manuellement
+    setStatus('✗ Impossible d\'accéder au sheet. Utilisez "Charger un CSV local" ou publiez le sheet via Fichier → Publier sur le Web.', 'err');
+    document.getElementById('helpBox').classList.remove('hidden');
+    document.getElementById('helpBox').innerHTML = `
+      <h3>Chargement manuel requis</h3>
+      <p>Le navigateur bloque l'accès direct au Google Sheet depuis un fichier local (restriction CORS).<br><br>
+      <strong>Solution 1</strong> : Exportez votre Sheet en CSV (Fichier → Télécharger → CSV) et glissez-le ici.<br><br>
+      <strong>Solution 2</strong> : Publiez le sheet via <strong>Fichier → Partager → Publier sur le Web → CSV</strong> et envoyez-moi l'URL — je l'intégrerai dans le dashboard.</p>
+    `;
+  }
+
+  // ========== CSV LOCAL (fallback) ==========
+  async function handleFile(file) {
+    try {
+      setStatus('Chargement fichier local...');
+      const text = await file.text();
+      const rows = parseCSV(text);
+      if (rows.length === 0) throw new Error('Aucune donnée.');
+      renderDashboard(rows);
+      setStatus(`✓ ${file.name} · ${rows.length} mois (local)`, 'ok');
+    } catch (err) {
+      setStatus('✗ ' + err.message, 'err');
+    }
+  }
+
+  // ========== EVENT LISTENERS ==========
+  document.getElementById('loadBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleFile(file);
+  });
+
+  // Drag & drop
+  const dropZone = document.body;
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dataBar').classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (evt === 'dragleave' && e.target !== dropZone && !dropZone.contains(e.relatedTarget)) return;
+      document.getElementById('dataBar').classList.remove('drag-over');
+    });
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) handleFile(file);
+    else setStatus('✗ Glissez un fichier .csv', 'err');
+  });
+
+  // ========== EXPORT HISTORIQUE ==========
+  function buildHistoryData(rows) {
+    const pvByDate = {};
+    rows.forEach(r => { pvByDate[r.Date] = investedValue(r) - capInvested(r); });
+    const displayRows = [...rows].reverse();
+
+    return displayRows.map((r, i) => {
+      const net = netOf(r);
+      const pvM = pvByDate[r.Date];
+      let dTotal = null, dEffort = null, dMarche = null;
+      if (i + 1 < displayRows.length) {
+        const prev = displayRows[i + 1];
+        const pvPrev = pvByDate[prev.Date];
+        dTotal  = net - netOf(prev);
+        dMarche = pvM - pvPrev;
+        dEffort = dTotal - dMarche;
+      }
+      return {
+        mois: new Date(r.Date).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+        date: r.Date,
+        PEA: r.PEA, AV: r.AV, PEE: r.PEE, CTO: r.CTO,
+        Crypto: r.Crypto, Liquide: r.Liquidites,
+        Dette: r.Dette, Net: net,
+        dTotal, dEffort, dMarche, pv: pvM,
+        Revenu: r.Revenu || 0,
+      };
+    });
+  }
+
+  function exportHistoryCSV() {
+    if (!currentRows) return;
+    const data = buildHistoryData(currentRows);
+    const headers = ['Date','Mois','PEA','AV','PEE','CTO','Crypto','Liquide','Dette','Net','Δ Total','Δ Effort','Δ Marché','PV latente','Revenu'];
+    const rows = data.map(r => [
+      r.date, r.mois,
+      r.PEA, r.AV, r.PEE, r.CTO, r.Crypto, r.Liquide, r.Dette, r.Net,
+      r.dTotal ?? '', r.dEffort ?? '', r.dMarche ?? '', r.pv, r.Revenu
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    download('\ufeff' + csv, 'historique-patrimoine.csv', 'text/csv');
+  }
+
+  function buildMarkdown(rows) {
+    const data = buildHistoryData(rows);
+    const latest = currentRows[currentRows.length - 1];
+    const latestNet = netOf(latest);
+    const latestCapInv = capInvested(latest);
+    const latestPV = investedValue(latest) - latestCapInv;
+
+    const fmtN = (n) => n == null ? '—' : (n >= 0 ? '+' : '') + Math.round(n).toLocaleString('fr-FR') + ' €';
+    const fmtA = (n) => Math.round(n).toLocaleString('fr-FR') + ' €';
+
+    let md = `# Patrimoine — Historique mensuel\n\n`;
+    md += `**Dernière mise à jour :** ${new Date(latest.Date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}\n\n`;
+    md += `## Résumé au dernier mois\n\n`;
+    md += `| Indicateur | Valeur |\n|---|---|\n`;
+    md += `| Patrimoine net | ${fmtA(latestNet)} |\n`;
+    md += `| Capital investi | ${fmtA(latestCapInv)} |\n`;
+    md += `| Plus-value latente | ${fmtN(latestPV)} (${(latestPV / latestCapInv * 100).toFixed(1)} %) |\n`;
+    md += `| PEA | ${fmtA(latest.PEA)} |\n`;
+    md += `| Assurance-vie | ${fmtA(latest.AV)} |\n`;
+    md += `| PEE | ${fmtA(latest.PEE)} |\n`;
+    md += `| CTO | ${fmtA(latest.CTO)} |\n`;
+    md += `| Crypto | ${fmtA(latest.Crypto)} |\n`;
+    md += `| Liquidités | ${fmtA(latest.Liquidites)} |\n`;
+    md += `| Dette restante | ${fmtA(latest.Dette)} |\n\n`;
+
+    md += `## Historique complet\n\n`;
+    md += `| Mois | PEA | AV | PEE | CTO | Crypto | Liquide | Dette | **Net** | Δ Total | Δ Effort | Δ Marché | PV latente | Revenu |\n`;
+    md += `|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n`;
+    data.forEach(r => {
+      md += `| ${r.mois} | ${fmtA(r.PEA)} | ${fmtA(r.AV)} | ${fmtA(r.PEE)} | ${fmtA(r.CTO)} | ${fmtA(r.Crypto)} | ${fmtA(r.Liquide)} | ${fmtA(r.Dette)} | **${fmtA(r.Net)}** | ${fmtN(r.dTotal)} | ${fmtN(r.dEffort)} | ${fmtN(r.dMarche)} | ${fmtN(r.pv)} | ${r.Revenu ? fmtA(r.Revenu) : '—'} |\n`;
+    });
+
+    return md;
+  }
+
+  function exportHistoryMarkdown() {
+    if (!currentRows) return;
+    const md = buildMarkdown(currentRows);
+    download(md, 'historique-patrimoine.md', 'text/markdown');
+  }
+
+  async function copyHistoryMarkdown() {
+    if (!currentRows) return;
+    const md = buildMarkdown(currentRows);
+    try {
+      await navigator.clipboard.writeText(md);
+      const btn = event.target;
+      btn.textContent = '✓ Copié !';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '⎘ Copier pour IA';
+        btn.classList.remove('copied');
+      }, 2500);
+    } catch {
+      exportHistoryMarkdown(); // fallback : télécharger
+    }
+  }
+
+  function download(content, filename, type) {
+    const blob = new Blob([content], { type: type + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ========== CHARGES FIXES ==========
+  const CHARGES = [
+    { jour: 1,  nom: 'Loyer',                      montant: 880.00 },
+    { jour: 1,  nom: 'Assurance habitation',        montant: 9.26 },
+    { jour: 3,  nom: 'Assurance auto (GMF)',        montant: 59.68 },
+    { jour: 5,  nom: 'YouTube Premium',             montant: 5.00 },
+    { jour: 6,  nom: 'Internet (Orange)',           montant: 19.59 },
+    { jour: 8,  nom: 'TGV Max Actif',               montant: 455.00 },
+    { jour: 8,  nom: 'Apple iCloud',                montant: 9.99 },
+    { jour: 11, nom: 'Cinepass',                    montant: 24.00 },
+    { jour: 15, nom: 'Claude (via Apple)',          montant: 22.00 },
+    { jour: 17, nom: 'Fitness Park',               montant: 25.00 },
+    { jour: 22, nom: 'Disney+',                    montant: 4.00 },
+    { jour: 23, nom: 'Frais N26',                  montant: 16.90 },
+    { jour: 25, nom: 'HBO Max (net Spliiit)',       montant: 3.99 },
+    { jour: 27, nom: 'EDF',                        montant: 60.00 },
+    { jour: 28, nom: 'Crunchyroll',                montant: 3.00 },
+  ];
+  const TOTAL_CHARGES = CHARGES.reduce((s, c) => s + c.montant, 0);
+
+  function renderCharges() {
+    const now = new Date();
+    const today = now.getDate();
+    const fmt2 = (n) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+    // Calcul payées / restantes
+    const payees = CHARGES.filter(c => c.jour <= today);
+    const restantes = CHARGES.filter(c => c.jour > today);
+    const totalPayees = payees.reduce((s, c) => s + c.montant, 0);
+    const totalRestantes = restantes.reduce((s, c) => s + c.montant, 0);
+
+    document.getElementById('chargesPayees').innerHTML = fmt2(totalPayees) + '<small> €</small>';
+    document.getElementById('chargesPayeesSub').textContent = `${payees.length} charge${payees.length > 1 ? 's' : ''} prélevée${payees.length > 1 ? 's' : ''} (jours 1–${today})`;
+    document.getElementById('chargesRestantes').innerHTML = fmt2(totalRestantes) + '<small> €</small>';
+    document.getElementById('chargesRestantesSub').textContent = `${restantes.length} charge${restantes.length > 1 ? 's' : ''} à venir ce mois`;
+
+    // Timeline
+    let cumul = 0;
+    const nextCharge = CHARGES.find(c => c.jour > today);
+    const rows = CHARGES.map(c => {
+      cumul += c.montant;
+      const isDone = c.jour < today;
+      const isToday = c.jour === today;
+      const isNext = c === nextCharge;
+      let rowClass = 'timeline-row';
+      if (isDone) rowClass += ' done';
+      if (isToday) rowClass += ' today';
+      if (!isDone && !isToday && isNext) rowClass += ' next';
+
+      let badge = '';
+      if (isDone) badge = '<span class="tl-badge done-badge">✓ fait</span>';
+      else if (isToday) badge = '<span class="tl-badge today-badge">aujourd\'hui</span>';
+      else if (isNext) badge = '<span class="tl-badge next-badge">prochain</span>';
+
+      const dayClass = isToday ? 'tl-day today-day' : 'tl-day';
+
+      return `<div class="${rowClass}">
+        <div class="${dayClass}"><span class="day-num">${c.jour}</span>du mois</div>
+        <div class="tl-name">${c.nom}${badge}</div>
+        <div class="tl-amount">${fmt2(c.montant)} €</div>
+        <div class="tl-cumul">${fmt2(cumul)} €</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('chargesTimeline').innerHTML = `
+      <div class="timeline-header">
+        <div>Jour</div>
+        <div>Charge</div>
+        <div style="text-align:right;">Montant</div>
+        <div style="text-align:right;">Cumulé</div>
+      </div>
+      ${rows}
+    `;
+
+    // Prochaine charge
+    const next = document.getElementById('chargesNext');
+    if (nextCharge) {
+      const daysLeft = nextCharge.jour - today;
+      next.innerHTML = `
+        <span class="next-icon">⏳</span>
+        <span>Prochaine charge : <strong>${nextCharge.nom}</strong> — <strong>${fmt2(nextCharge.montant)} €</strong> dans <strong>${daysLeft} jour${daysLeft > 1 ? 's' : ''}</strong> (jour ${nextCharge.jour})</span>
+      `;
+    } else {
+      next.innerHTML = `<span class="next-icon">✅</span><span>Toutes les charges du mois ont été prélevées.</span>`;
+    }
+  }
+
+  // Init charges au chargement
+  renderCharges();
+
+  // Auto-load depuis le Google Sheet au démarrage
+  loadFromSheet();
+</script>
+</body>
+</html>
