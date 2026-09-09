@@ -307,6 +307,54 @@
   }
   .charges-next .next-icon { font-size: 20px; }
   .charges-next strong { color: #1a1815; }
+
+  /* JALONS PATRIMONIAUX */
+  .jalons-section { margin-bottom: 48px; display: flex; flex-direction: column; gap: 16px; }
+  .jalon-100k { background: var(--ink); color: #f4f1ea; padding: 28px 32px; border-radius: 4px; position: relative; overflow: hidden; }
+  .jalon-100k-content { position: relative; z-index: 1; }
+  .jalon-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .jalon-title { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; opacity: 0.6; }
+  .jalon-pct { font-size: 48px; font-weight: 300; font-feature-settings: 'tnum'; letter-spacing: -0.03em; color: #f4f1ea; }
+  .jalon-pct small { font-size: 20px; opacity: 0.5; }
+  .jalon-bar-track { height: 4px; background: rgba(244,241,234,0.15); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+  .jalon-bar-fill { height: 100%; background: #b08a42; border-radius: 2px; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
+  .jalon-meta { display: flex; gap: 32px; font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.7; flex-wrap: wrap; }
+  .jalon-meta span strong { color: #f4f1ea; opacity: 1; font-weight: 500; }
+  .jalons-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .jalon-card { background: #f4f1ea; padding: 20px; }
+  .jalon-card.done { background: #f0f6f1; }
+  .jalon-card.next { background: #fff9e6; border-left: 3px solid #8b6b2f; }
+  .jalon-card-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #857e72; margin-bottom: 6px; }
+  .jalon-card-value { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; color: #1a1815; margin-bottom: 4px; }
+  .jalon-card.done .jalon-card-value { color: #3d6b45; }
+  .jalon-card.next .jalon-card-value { color: #8b6b2f; }
+  .jalon-card-sub { font-size: 12px; color: #857e72; font-style: italic; }
+  .jalon-done-badge { display: inline-block; padding: 2px 7px; background: rgba(61,107,69,0.12); color: #3d6b45; font-family: 'JetBrains Mono', monospace; font-size: 9px; border-radius: 10px; margin-bottom: 6px; }
+
+  /* BUDGET RESTANT */
+  .budget-restant { margin-top: 12px; padding: 18px 20px; background: #f0f6f1; border: 1px solid rgba(61,107,69,0.2); border-left: 4px solid #3d6b45; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: center; }
+  .budget-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #857e72; margin-bottom: 4px; }
+  .budget-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; color: #1a1815; }
+  .budget-value.pos { color: #3d6b45; }
+  .budget-value.neg { color: #933a2a; }
+  .budget-value.warn { color: #a85a2a; }
+
+  /* STATS AVANCÉES */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px; }
+  .stat-card { background: #f4f1ea; border: 1px solid var(--line); padding: 24px; }
+  .stat-card-title { font-size: 13px; font-weight: 500; color: #1a1815; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row-label { font-size: 13px; color: #4a4640; }
+  .stat-row-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1a1815; }
+  .stat-row-value.pos { color: #3d6b45; }
+  .stat-row-value.neg { color: #933a2a; }
+  .stat-row-value.warn { color: #a85a2a; }
+  .liq-alert { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 3px; font-size: 12px; font-style: italic; margin-top: 12px; }
+  .liq-alert.ok { background: rgba(61,107,69,0.08); color: #3d6b45; }
+  .liq-alert.warn { background: rgba(168,90,42,0.08); color: #a85a2a; }
+  .liq-alert.danger { background: rgba(147,58,42,0.12); color: #933a2a; }
+
   .delta-hero {
     display: grid;
     grid-template-columns: 1fr auto 1fr auto 1fr;
@@ -546,6 +594,18 @@
     .kpi { padding: 18px 14px; }
     .kpi-value { font-size: 22px; }
 
+    /* JALONS */
+    .jalons-row { grid-template-columns: 1fr 1fr; }
+    .jalon-pct { font-size: 36px; }
+    .jalon-100k { padding: 20px; }
+    .jalon-meta { gap: 16px; }
+
+    /* BUDGET */
+    .budget-restant { grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; }
+
+    /* STATS AVANCÉES */
+    .stats-grid { grid-template-columns: 1fr; }
+
     /* DELTA HERO */
     .delta-hero { grid-template-columns: 1fr; }
     .delta-sep { padding: 6px; font-size: 16px; justify-content: flex-start; padding-left: 16px; }
@@ -695,6 +755,15 @@
       </div>
     </section>
 
+    <!-- SECTION JALONS -->
+    <div class="section-head fade-in d2">
+      <span class="section-num">— /</span>
+      <h2 class="section-title">Jalons patrimoniaux</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="jalons-section fade-in d2" id="jalonsSection"></section>
+
     <!-- SECTION CHARGES FIXES -->
     <div class="section-head fade-in d2">
       <span class="section-num">00 /</span>
@@ -727,6 +796,9 @@
 
       <!-- PROCHAINE CHARGE -->
       <div class="charges-next" id="chargesNext"></div>
+
+      <!-- BUDGET RESTANT DU MOIS -->
+      <div class="budget-restant" id="budgetRestant"></div>
     </section>
 
     <!-- SECTION 1 : PERFORMANCE -->
@@ -849,6 +921,15 @@
         <div class="kpi-note" id="kpiVolSub">—</div>
       </div>
     </section>
+
+    <!-- SECTION STATS AVANCÉES -->
+    <div class="section-head fade-in d3">
+      <span class="section-num">03b /</span>
+      <h2 class="section-title">Analyse avancée</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <section class="stats-grid fade-in d3" id="statsAvancees"></section>
 
     <!-- SECTION 3b : DÉCOMPOSITION DELTA -->
     <div class="section-head fade-in d3">
@@ -1080,11 +1161,11 @@
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) throw new Error('CSV vide ou sans données.');
-    
+
     // Détecter séparateur (; ou ,)
     const firstLine = lines[0];
     const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
-    
+
     const rawHeaders = lines[0].split(sep).map(h => h.trim());
     const find = (re) => rawHeaders.findIndex(h => re.test(h));
 
@@ -1644,6 +1725,11 @@
     apportSlider.value = Math.max(0, Math.round(avgEffort / 50) * 50);
     setupProjections(rows);
 
+    // Nouvelles sections
+    renderJalons(rows);
+    renderBudgetRestant(rows);
+    renderStatsAvancees(rows);
+
     document.getElementById('helpBox').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
     document.getElementById('clearBtn').style.display = '';
@@ -1939,7 +2025,7 @@
       r.dTotal ?? '', r.dEffort ?? '', r.dMarche ?? '', r.pv, r.Revenu
     ].join(','));
     const csv = [headers.join(','), ...rows].join('\n');
-    download('\ufeff' + csv, 'historique-patrimoine.csv', 'text/csv');
+    download('﻿' + csv, 'historique-patrimoine.csv', 'text/csv');
   }
 
   function buildMarkdown(rows) {
@@ -2006,6 +2092,313 @@
     const a = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // ========== JALONS PATRIMONIAUX ==========
+  function renderJalons(rows) {
+    if (!rows || rows.length === 0) return;
+    const latest = rows[rows.length - 1];
+    const net = netOf(latest);
+    const first = rows[0];
+    const firstNet = netOf(first);
+
+    // Delta moyen sur 12 derniers mois
+    const last12 = rows.slice(-13);
+    let deltas = [];
+    for (let i = 1; i < last12.length; i++) {
+      deltas.push(netOf(last12[i]) - netOf(last12[i-1]));
+    }
+    const avgDelta = deltas.reduce((a,b) => a+b, 0) / deltas.length;
+
+    const cible100k = 100000;
+    const pct100k = Math.min((net / cible100k) * 100, 100);
+    const moisPour100k = net < cible100k && avgDelta > 0 ? Math.ceil((cible100k - net) / avgDelta) : 0;
+
+    const dateEst = (mois) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + mois);
+      return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    };
+
+    const container = document.getElementById('jalonsSection');
+    if (!container) return;
+
+    // Barre 100k
+    container.innerHTML = `
+      <div class="jalon-100k">
+        <div class="jalon-100k-content">
+          <div class="jalon-top">
+            <div class="jalon-title">— Progression vers 100 000 €</div>
+            <div class="jalon-pct">${pct100k.toFixed(1).replace('.', ',')} <small>%</small></div>
+          </div>
+          <div class="jalon-bar-track">
+            <div class="jalon-bar-fill" style="width:${pct100k}%"></div>
+          </div>
+          <div class="jalon-meta">
+            <span>${fmt(net)} € <strong>actuels</strong></span>
+            <span>Reste <strong>${fmt(cible100k - net)} €</strong></span>
+            ${moisPour100k > 0 ? `<span>Estimé <strong>${dateEst(moisPour100k)}</strong> (dans ${moisPour100k} mois)</span>` : '<span style="color:#7fb186">✓ Objectif atteint !</span>'}
+            <span>Rythme <strong>+${fmt(avgDelta)} €/mois</strong></span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Jalons intermédiaires
+    const jalons = [
+      { cible: 30000,  label: '30 000 €' },
+      { cible: 50000,  label: '50 000 €' },
+      { cible: 75000,  label: '75 000 €' },
+      { cible: 100000, label: '100 000 €' },
+    ];
+
+    const rowEl = document.createElement('div');
+    rowEl.className = 'jalons-row';
+
+    jalons.forEach(j => {
+      const done = net >= j.cible;
+      const isNext = !done && jalons.findIndex(x => !netOf(latest) >= x.cible) === jalons.indexOf(j);
+      const moisJ = !done && avgDelta > 0 ? Math.ceil((j.cible - net) / avgDelta) : 0;
+      const isNextJalon = !done && jalons.filter(x => net < x.cible)[0] === j;
+
+      const card = document.createElement('div');
+      card.className = 'jalon-card' + (done ? ' done' : isNextJalon ? ' next' : '');
+
+      if (done) {
+        // Trouver le mois où ce jalon a été franchi
+        const franchi = rows.find(r => netOf(r) >= j.cible);
+        const quand = franchi ? new Date(franchi.Date).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }) : '—';
+        card.innerHTML = `
+          <div class="jalon-done-badge">✓ atteint</div>
+          <div class="jalon-card-label">— Jalon</div>
+          <div class="jalon-card-value">${j.label}</div>
+          <div class="jalon-card-sub">Franchi en ${quand}</div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="jalon-card-label">— ${isNextJalon ? 'Prochain jalon' : 'Jalon'}</div>
+          <div class="jalon-card-value">${j.label}</div>
+          <div class="jalon-card-sub">${moisJ > 0 ? `~${moisJ} mois · ${dateEst(moisJ)}` : 'Calcul en attente'}</div>
+        `;
+      }
+      rowEl.appendChild(card);
+    });
+
+    container.appendChild(rowEl);
+  }
+
+  // ========== BUDGET RESTANT DU MOIS ==========
+  function renderBudgetRestant(rows) {
+    const el = document.getElementById('budgetRestant');
+    if (!el || !rows || rows.length === 0) return;
+
+    const latest = rows[rows.length - 1];
+    const revenu = latest.Revenu || 0;
+    if (revenu === 0) { el.style.display = 'none'; return; }
+
+    const today = new Date().getDate();
+    const chargesPayees = CHARGES.filter(c => c.jour <= today).reduce((s,c) => s + c.montant, 0);
+    const chargesRestantes = CHARGES.filter(c => c.jour > today).reduce((s,c) => s + c.montant, 0);
+
+    // Remboursement TGV Max (455€) — Circana rembourse 50% = 227.50€
+    const REMB_TGV = 227.50;
+    const vraiTauxCharges = (TOTAL_CHARGES - REMB_TGV) / revenu * 100;
+    const chargesNettes = TOTAL_CHARGES - REMB_TGV;
+
+    const restant = revenu - chargesPayees;
+    const disponible = revenu - TOTAL_CHARGES;
+    const cls = disponible > 800 ? 'pos' : disponible > 300 ? 'warn' : 'neg';
+    const fmtB = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(n));
+
+    el.innerHTML = `
+      <div>
+        <div class="budget-label">Revenu du mois</div>
+        <div class="budget-value">${fmtB(revenu)} €</div>
+      </div>
+      <div>
+        <div class="budget-label">Charges déjà passées</div>
+        <div class="budget-value neg">−${fmtB(chargesPayees)} €</div>
+      </div>
+      <div>
+        <div class="budget-label">Reste à imputer</div>
+        <div class="budget-value warn">−${fmtB(chargesRestantes)} €</div>
+      </div>
+      <div>
+        <div class="budget-label">Disponible net (après Circana)</div>
+        <div class="budget-value ${cls}">${fmtB(revenu - chargesNettes)} €</div>
+      </div>
+    `;
+  }
+
+  // ========== STATS AVANCÉES ==========
+  function renderStatsAvancees(rows) {
+    const el = document.getElementById('statsAvancees');
+    if (!el || !rows || rows.length < 3) return;
+
+    const latest = rows[rows.length - 1];
+    const liqActuelle = latest.Liquidites;
+    const SEUIL_ALERTE = 3000;
+    const SEUIL_DANGER = 1500;
+
+    // ---- CARTE 1 : Séquences de performance ----
+    const deltas = rows.map((r, i) => i === 0 ? 0 : netOf(r) - netOf(rows[i-1])).slice(1);
+    let curStreak = 1, maxPos = 0, maxNeg = 0, curPos = 0, curNeg = 0;
+    let posStart = '', negStart = '', maxPosStart = '', maxNegStart = '';
+    deltas.forEach((d, i) => {
+      if (d >= 0) {
+        curPos++; curNeg = 0;
+        if (curPos === 1) posStart = monthLabel(rows[i+1].Date);
+        if (curPos > maxPos) { maxPos = curPos; maxPosStart = posStart; }
+      } else {
+        curNeg++; curPos = 0;
+        if (curNeg === 1) negStart = monthLabel(rows[i+1].Date);
+        if (curNeg > maxNeg) { maxNeg = curNeg; maxNegStart = negStart; }
+      }
+    });
+
+    // ---- CARTE 2 : Mois normaux vs primes ----
+    const revenus = rows.filter(r => r.Revenu > 0).map(r => r.Revenu);
+    const medRevenu = revenus.sort((a,b) => a-b)[Math.floor(revenus.length/2)];
+    const SEUIL_PRIME = medRevenu * 1.2;
+    const moisPrimes = rows.filter(r => r.Revenu > SEUIL_PRIME);
+    const moisNormaux = rows.filter(r => r.Revenu > 0 && r.Revenu <= SEUIL_PRIME);
+    const deltasMois = rows.map((r,i) => i === 0 ? null : netOf(r) - netOf(rows[i-1]));
+
+    const avgNormal = moisNormaux.reduce((s, r, i) => {
+      const idx = rows.indexOf(r);
+      return s + (deltasMois[idx] || 0);
+    }, 0) / (moisNormaux.length || 1);
+
+    const avgPrime = moisPrimes.reduce((s, r) => {
+      const idx = rows.indexOf(r);
+      return s + (deltasMois[idx] || 0);
+    }, 0) / (moisPrimes.length || 1);
+
+    // ---- CARTE 3 : Tendance liquidités ----
+    const liqDeltas = rows.slice(-6).map((r,i,arr) => i === 0 ? 0 : r.Liquidites - arr[i-1].Liquidites).slice(1);
+    const liqTendance = liqDeltas.reduce((a,b) => a+b, 0) / liqDeltas.length;
+    const moisAvantSeuil = liqTendance < 0 ? Math.floor((liqActuelle - SEUIL_ALERTE) / Math.abs(liqTendance)) : Infinity;
+
+    // ---- CARTE 4 : Impact remboursement TGV ----
+    const REMB_TGV = 227.50;
+    const revMoy = rows.filter(r => r.Revenu > 0 && r.Revenu < medRevenu * 1.2).reduce((s,r) => s + r.Revenu, 0) / (moisNormaux.length || 1);
+    const tauxAvecTGV = TOTAL_CHARGES / revMoy * 100;
+    const tauxSansTGV = (TOTAL_CHARGES - REMB_TGV) / revMoy * 100;
+    const economieTGV = REMB_TGV * 12;
+
+    // Alert liquidités
+    let liqAlertClass = 'ok', liqAlertMsg = '';
+    if (liqActuelle < SEUIL_DANGER) {
+      liqAlertClass = 'danger';
+      liqAlertMsg = `⚠ Niveau critique — sous ${fmt(SEUIL_DANGER)} €. Pensez à renflouer.`;
+    } else if (liqActuelle < SEUIL_ALERTE) {
+      liqAlertClass = 'warn';
+      liqAlertMsg = `⚡ Niveau bas — sous ${fmt(SEUIL_ALERTE)} €. Gardez un œil.`;
+    } else if (liqTendance < -200 && moisAvantSeuil < 6) {
+      liqAlertClass = 'warn';
+      liqAlertMsg = `📉 Tendance baissière — seuil d'alerte dans ~${moisAvantSeuil} mois à ce rythme.`;
+    } else {
+      liqAlertMsg = `✓ Liquidités saines · tendance ${liqTendance >= 0 ? '+' : ''}${fmt(liqTendance)} €/mois (6 derniers mois).`;
+    }
+
+    el.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-card-title">📈 Séquences de performance</div>
+        <div class="stat-row">
+          <div class="stat-row-label">Meilleure série positive</div>
+          <div class="stat-row-value pos">${maxPos} mois consécutifs</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Depuis</div>
+          <div class="stat-row-value">${maxPosStart}</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Pire série négative</div>
+          <div class="stat-row-value neg">${maxNeg} mois consécutifs</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Depuis</div>
+          <div class="stat-row-value">${maxNegStart || '—'}</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Mois positifs sur ${rows.length - 1}</div>
+          <div class="stat-row-value pos">${deltas.filter(d => d > 0).length} mois (${Math.round(deltas.filter(d => d > 0).length / deltas.length * 100)} %)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-title">🎯 Mois normaux vs mois primes</div>
+        <div class="stat-row">
+          <div class="stat-row-label">Seuil "prime" estimé</div>
+          <div class="stat-row-value">> ${fmt(SEUIL_PRIME)} €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Mois normaux (${moisNormaux.length})</div>
+          <div class="stat-row-value ${avgNormal > 0 ? 'pos' : 'neg'}">${fmtSigned(Math.round(avgNormal))} €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Mois primes (${moisPrimes.length})</div>
+          <div class="stat-row-value pos">+${fmt(Math.round(avgPrime))} €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Écart mois prime vs normal</div>
+          <div class="stat-row-value pos">+${fmt(Math.round(avgPrime - avgNormal))} €</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Primes attendues / an</div>
+          <div class="stat-row-value">~${moisPrimes.length <= 12 ? Math.round(moisPrimes.length / (rows.length / 12)) : 2} mois</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-title">💧 Tendance liquidités</div>
+        <div class="stat-row">
+          <div class="stat-row-label">Liquidités actuelles</div>
+          <div class="stat-row-value ${liqActuelle < SEUIL_ALERTE ? 'warn' : ''}">${fmt(liqActuelle)} €</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Tendance 6 derniers mois</div>
+          <div class="stat-row-value ${liqTendance >= 0 ? 'pos' : 'warn'}">${liqTendance >= 0 ? '+' : ''}${fmt(liqTendance)} €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Seuil d'alerte</div>
+          <div class="stat-row-value">${fmt(SEUIL_ALERTE)} €</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Min historique</div>
+          <div class="stat-row-value warn">${fmt(Math.min(...rows.map(r => r.Liquidites)))} €</div>
+        </div>
+        <div class="liq-alert ${liqAlertClass}">${liqAlertMsg}</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-title">🚄 Impact remboursement TGV Max</div>
+        <div class="stat-row">
+          <div class="stat-row-label">Coût brut TGV Max</div>
+          <div class="stat-row-value neg">−455,00 €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Remboursement Circana (50%)</div>
+          <div class="stat-row-value pos">+${fmt(REMB_TGV)} €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Coût net réel</div>
+          <div class="stat-row-value">227,50 €/mois</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Taux charges brut</div>
+          <div class="stat-row-value warn">${tauxAvecTGV.toFixed(1)} % du revenu</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Taux charges net (après remb.)</div>
+          <div class="stat-row-value pos">${tauxSansTGV.toFixed(1)} % du revenu</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-label">Économie annuelle Circana</div>
+          <div class="stat-row-value pos">+${fmt(economieTGV)} €/an</div>
+        </div>
+      </div>
+    `;
   }
 
   // ========== CHARGES FIXES ==========
