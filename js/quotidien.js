@@ -112,15 +112,19 @@ function renderQuotResult(saved) {
       <div class="quot-label">Carte à débit différé (mois prochain)</div>
       <div class="quot-value neg">${fmt(carteDiffere)} €</div>
     </div>` : ''}
+    <div class="quot-row">
+      <div class="quot-label">Solde disponible hors Ticket Resto</div>
+      <div class="quot-value ${soldeApresCharges >= 0 ? 'pos' : 'neg'}">${fmt(soldeApresCharges)} €</div>
+    </div>
     ${ticketResto !== 0 ? `
     <div class="quot-row">
       <div class="quot-label">Solde Ticket Restaurant</div>
       <div class="quot-value pos">+${fmt(ticketResto)} €</div>
-    </div>` : ''}
-    <div class="quot-row">
-      <div class="quot-label">Argent disponible (compte + TR)</div>
-      <div class="quot-value ${argentDisponible >= 0 ? 'pos' : 'neg'}">${fmt(argentDisponible)} €</div>
     </div>
+    <div class="quot-row">
+      <div class="quot-label">Solde disponible avec Ticket Resto</div>
+      <div class="quot-value ${argentDisponible >= 0 ? 'pos' : 'neg'}">${fmt(argentDisponible)} €</div>
+    </div>` : ''}
     <div class="quot-row">
       <div class="quot-label">Budget/jour (${joursRestants} j restants)</div>
       <div class="quot-value ${budgetCls}">${fmt(budgetJour)} €/j</div>
@@ -142,11 +146,13 @@ function renderQuotObjectif(saved) {
     return;
   }
 
-  // Calcul volontairement simple, sur demande : la différence brute entre le
-  // solde du dernier relevé Google Sheet et le solde actuel saisi. Aucun
-  // ajustement (charges, carte, revenu) — ces montants sont déjà pris en
-  // compte par l'utilisateur dans le solde qu'il saisit.
-  const depenses = sheetReference.liquidites - saved.compteCourant;
+  // Différence entre le solde du dernier relevé Google Sheet et le solde
+  // actuel saisi, en réintégrant la carte à débit différé : cet argent est
+  // déjà dépensé (achats faits sur la carte) même s'il n'a pas encore
+  // quitté le compte courant, donc il doit compter dans la vraie dépense.
+  const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
+  const soldeActuelEffectif = saved.compteCourant + carteDiffere;
+  const depenses = sheetReference.liquidites - soldeActuelEffectif;
   const dateReference = new Date(sheetReference.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   el.innerHTML = `
@@ -155,7 +161,7 @@ function renderQuotObjectif(saved) {
       <span class="quot-objectif-value">${fmt(depenses)} €</span>
     </div>
     <div class="quot-objectif-sub">
-      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde actuel (${fmt(saved.compteCourant)} €).
+      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde actuel (${fmt(saved.compteCourant)} €)${carteDiffere !== 0 ? ` + carte à débit différé à venir (${fmt(-carteDiffere)} €)` : ''}.
     </div>
   `;
 }
