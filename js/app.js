@@ -629,9 +629,10 @@
     document.getElementById('dashboard').classList.remove('hidden');
 
     // Point de référence pour le pilotage quotidien : dernier solde connu
-    // (compte courant + livret) et revenu de ce même mois, pour estimer les
-    // dépenses depuis ce relevé une fois le solde actuel saisi.
-    sheetReference = { liquidites: latest.Liquidites, revenu: latest.Revenu || avgRev, date: latest.Date };
+    // (compte courant + livret) au moment du relevé Sheet. Le salaire du
+    // mois est déjà inclus dans ce solde (le relevé est saisi juste après
+    // réception), donc il ne doit pas être rajouté séparément.
+    sheetReference = { liquidites: latest.Liquidites, date: latest.Date };
     if (typeof renderQuotidien === 'function') renderQuotidien();
   }
 
@@ -1310,6 +1311,33 @@
   function joursRestantsDansLeMois(date = new Date()) {
     const finMois = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     return finMois - date.getDate();
+  }
+
+  // Somme des charges fixes dont la date de prélèvement tombe strictement
+  // après `dateRef` (ex : la date du dernier relevé Google Sheet) et jusqu'à
+  // aujourd'hui inclus — contrairement à chargesPayeesMontant() qui compte
+  // depuis le 1er du mois, celle-ci évite de recompter les charges déjà
+  // reflétées dans le solde de référence, et gère correctement le passage
+  // d'un mois à l'autre si le relevé date du mois précédent.
+  function chargesDepuisDate(dateRef) {
+    const ref = new Date(dateRef);
+    ref.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (ref >= today) return 0;
+
+    let total = 0;
+    let cursor = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    while (cursor <= today) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      for (const c of CHARGES) {
+        const chargeDate = new Date(year, month, c.jour);
+        if (chargeDate > ref && chargeDate <= today) total += c.montant;
+      }
+      cursor = new Date(year, month + 1, 1);
+    }
+    return total;
   }
 
   function renderCharges() {

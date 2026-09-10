@@ -142,16 +142,17 @@ function renderQuotObjectif(saved) {
     return;
   }
 
-  const today = new Date().getDate();
-  const chargesFixesPayees = chargesPayeesMontant(today);
   // Solde théorique si aucune dépense discrétionnaire n'avait eu lieu depuis
-  // le dernier relevé Sheet : solde de référence + revenu du mois − charges
-  // fixes déjà prélevées (la carte à débit différé n'a pas encore débité,
-  // elle est donc exclue de ce calcul).
-  const soldeTheorique = sheetReference.liquidites + sheetReference.revenu - chargesFixesPayees;
+  // le relevé Sheet : le salaire du mois est déjà inclus dans ce solde (le
+  // relevé est saisi juste après réception), donc on ne soustrait que les
+  // charges fixes prélevées DEPUIS cette date précise — pas depuis le 1er
+  // du mois, pour ne pas recompter celles déjà reflétées dans le solde.
+  const chargesDepuisReference = chargesDepuisDate(sheetReference.date);
+  const soldeTheorique = sheetReference.liquidites - chargesDepuisReference;
   const depenses = soldeTheorique - saved.compteCourant;
   const pct = Math.min(Math.max((depenses / OBJECTIF_DEPENSES_HORS_TR) * 100, 0), 100);
   const depasse = depenses > OBJECTIF_DEPENSES_HORS_TR;
+  const dateReference = new Date(sheetReference.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   el.innerHTML = `
     <div class="quot-objectif-head">
@@ -165,7 +166,7 @@ function renderQuotObjectif(saved) {
       ${depasse
         ? `Dépassement de ${fmt(depenses - OBJECTIF_DEPENSES_HORS_TR)} € par rapport à l'objectif.`
         : `Reste ${fmt(OBJECTIF_DEPENSES_HORS_TR - depenses)} € avant d'atteindre l'objectif.`}
-      Estimation basée sur le solde du ${monthLabel(sheetReference.date)} (${fmt(sheetReference.liquidites)} €) + revenu estimé ${fmt(sheetReference.revenu)} € − charges payées ${fmt(chargesFixesPayees)} €.
+      Estimation basée sur le solde du relevé Google Sheet du ${dateReference} (${fmt(sheetReference.liquidites)} €, salaire déjà inclus) − charges prélevées depuis cette date (${fmt(chargesDepuisReference)} €).
     </div>
   `;
 }
