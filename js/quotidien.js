@@ -134,39 +134,28 @@ function renderQuotObjectif(saved) {
   if (!el) return;
 
   if (saved.compteCourant == null) {
-    el.innerHTML = `<p class="quot-objectif-empty">Renseignez votre solde de compte courant pour suivre votre objectif de dépenses.</p>`;
+    el.innerHTML = `<p class="quot-objectif-empty">Renseignez votre solde de compte courant pour suivre vos dépenses depuis le dernier relevé.</p>`;
     return;
   }
   if (!sheetReference) {
-    el.innerHTML = `<p class="quot-objectif-empty">Chargez vos données (Google Sheet ou CSV) pour activer le suivi de l'objectif de dépenses.</p>`;
+    el.innerHTML = `<p class="quot-objectif-empty">Chargez vos données (Google Sheet ou CSV) pour activer le suivi des dépenses.</p>`;
     return;
   }
 
-  // Solde théorique si aucune dépense discrétionnaire n'avait eu lieu depuis
-  // le relevé Sheet : le salaire du mois est déjà inclus dans ce solde (le
-  // relevé est saisi juste après réception), donc on ne soustrait que les
-  // charges fixes prélevées DEPUIS cette date précise — pas depuis le 1er
-  // du mois, pour ne pas recompter celles déjà reflétées dans le solde.
-  const chargesDepuisReference = chargesDepuisDate(sheetReference.date);
-  const soldeTheorique = sheetReference.liquidites - chargesDepuisReference;
-  const depenses = soldeTheorique - saved.compteCourant;
-  const pct = Math.min(Math.max((depenses / OBJECTIF_DEPENSES_HORS_TR) * 100, 0), 100);
-  const depasse = depenses > OBJECTIF_DEPENSES_HORS_TR;
+  // Calcul volontairement simple, sur demande : la différence brute entre le
+  // solde du dernier relevé Google Sheet et le solde actuel saisi. Aucun
+  // ajustement (charges, carte, revenu) — ces montants sont déjà pris en
+  // compte par l'utilisateur dans le solde qu'il saisit.
+  const depenses = sheetReference.liquidites - saved.compteCourant;
   const dateReference = new Date(sheetReference.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   el.innerHTML = `
     <div class="quot-objectif-head">
-      <span class="quot-objectif-label">— Objectif dépenses hors Ticket Resto</span>
-      <span class="quot-objectif-value ${depasse ? 'over' : ''}">${fmt(depenses)} € / ${OBJECTIF_DEPENSES_HORS_TR} €</span>
-    </div>
-    <div class="quot-objectif-track">
-      <div class="quot-objectif-fill ${depasse ? 'over' : 'ok'}" style="width:${pct}%"></div>
+      <span class="quot-objectif-label">— Dépensé depuis le relevé Google Sheet</span>
+      <span class="quot-objectif-value">${fmt(depenses)} €</span>
     </div>
     <div class="quot-objectif-sub">
-      ${depasse
-        ? `Dépassement de ${fmt(depenses - OBJECTIF_DEPENSES_HORS_TR)} € par rapport à l'objectif.`
-        : `Reste ${fmt(OBJECTIF_DEPENSES_HORS_TR - depenses)} € avant d'atteindre l'objectif.`}
-      Estimation basée sur le solde du relevé Google Sheet du ${dateReference} (${fmt(sheetReference.liquidites)} €, salaire déjà inclus) − charges prélevées depuis cette date (${fmt(chargesDepuisReference)} €).
+      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde actuel (${fmt(saved.compteCourant)} €).
     </div>
   `;
 }

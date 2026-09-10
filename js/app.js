@@ -1313,33 +1313,6 @@
     return finMois - date.getDate();
   }
 
-  // Somme des charges fixes dont la date de prélèvement tombe strictement
-  // après `dateRef` (ex : la date du dernier relevé Google Sheet) et jusqu'à
-  // aujourd'hui inclus — contrairement à chargesPayeesMontant() qui compte
-  // depuis le 1er du mois, celle-ci évite de recompter les charges déjà
-  // reflétées dans le solde de référence, et gère correctement le passage
-  // d'un mois à l'autre si le relevé date du mois précédent.
-  function chargesDepuisDate(dateRef) {
-    const ref = new Date(dateRef);
-    ref.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (ref >= today) return 0;
-
-    let total = 0;
-    let cursor = new Date(ref.getFullYear(), ref.getMonth(), 1);
-    while (cursor <= today) {
-      const year = cursor.getFullYear();
-      const month = cursor.getMonth();
-      for (const c of CHARGES) {
-        const chargeDate = new Date(year, month, c.jour);
-        if (chargeDate > ref && chargeDate <= today) total += c.montant;
-      }
-      cursor = new Date(year, month + 1, 1);
-    }
-    return total;
-  }
-
   function renderCharges() {
     const now = new Date();
     const today = now.getDate();
