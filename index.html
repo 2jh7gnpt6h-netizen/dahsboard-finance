@@ -41,8 +41,15 @@
     <div class="quotidien-box">
       <form class="quot-form" id="quotForm">
         <div class="quot-field">
-          <label for="quotCompte">Solde compte courant</label>
-          <input type="number" id="quotCompte" step="0.01" inputmode="decimal" placeholder="0,00" />
+          <label for="quotCompte">Solde compte(s) courant(s)</label>
+          <input type="text" id="quotCompte" autocomplete="off" placeholder="ex : 1200 + 350 - 80" />
+          <div class="quot-hint">Plusieurs comptes ? Additionnez-les directement : 1200 + 350</div>
+          <div class="quot-error" id="quotCompteError"></div>
+        </div>
+        <div class="quot-field">
+          <label for="quotCarteDiffere">Carte à débit différé (1er du mois prochain)</label>
+          <input type="number" id="quotCarteDiffere" step="0.01" inputmode="decimal" placeholder="-450,00" />
+          <div class="quot-hint">Montant à venir sur le compte courant : entrez-le en négatif</div>
         </div>
         <div class="quot-field">
           <label for="quotTicket">Solde Ticket Restaurant</label>

@@ -695,6 +695,9 @@
     font-size: 15px; color: var(--ink);
   }
   .quot-field input:focus { outline: none; border-color: var(--accent); }
+  .quot-field input.invalid { border-color: var(--danger); }
+  .quot-hint { font-size: 11px; color: var(--ink-mute); font-style: italic; margin-top: 6px; }
+  .quot-error { font-size: 11px; color: var(--danger); margin-top: 6px; min-height: 1em; }
   .quot-form button { align-self: flex-start; }
   .quot-result { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .quot-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
