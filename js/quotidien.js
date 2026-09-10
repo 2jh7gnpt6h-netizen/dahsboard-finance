@@ -79,17 +79,9 @@ function saveQuotidien(data) {
   } catch {}
 }
 
-function renderQuotidien() {
-  const saved = loadQuotidien();
-  const compteEl = document.getElementById('quotCompte');
-  const carteEl = document.getElementById('quotCarteDiffere');
-  const ticketEl = document.getElementById('quotTicket');
+function renderQuotResult(saved) {
   const resultEl = document.getElementById('quotResult');
-  if (!compteEl || !carteEl || !ticketEl || !resultEl) return;
-
-  if (document.activeElement !== compteEl && saved.compteCourantExpr != null) compteEl.value = saved.compteCourantExpr;
-  if (document.activeElement !== carteEl && saved.carteDiffere != null) carteEl.value = saved.carteDiffere;
-  if (document.activeElement !== ticketEl && saved.ticketResto != null) ticketEl.value = saved.ticketResto;
+  if (!resultEl) return;
 
   if (saved.compteCourant == null) {
     resultEl.innerHTML = `<p class="quot-empty">Renseignez votre solde de compte courant pour estimer votre budget disponible jusqu'à la fin du mois.</p>`;
@@ -99,9 +91,11 @@ function renderQuotidien() {
   const today = new Date().getDate();
   const restantes = chargesRestantesMontant(today);
   const joursRestants = Math.max(joursRestantsDansLeMois(), 1);
-  const carteDiffere = saved.carteDiffere || 0;
+  const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
+  const ticketResto = saved.ticketResto || 0;
   const soldeApresCharges = saved.compteCourant - restantes + carteDiffere;
-  const budgetJour = soldeApresCharges / joursRestants;
+  const argentDisponible = soldeApresCharges + ticketResto;
+  const budgetJour = argentDisponible / joursRestants;
   const budgetCls = budgetJour > 20 ? 'pos' : budgetJour > 0 ? 'warn' : 'neg';
 
   resultEl.innerHTML = `
@@ -116,23 +110,79 @@ function renderQuotidien() {
     ${carteDiffere !== 0 ? `
     <div class="quot-row">
       <div class="quot-label">Carte à débit différé (mois prochain)</div>
-      <div class="quot-value ${carteDiffere < 0 ? 'neg' : 'pos'}">${fmt(carteDiffere)} €</div>
+      <div class="quot-value neg">${fmt(carteDiffere)} €</div>
+    </div>` : ''}
+    ${ticketResto !== 0 ? `
+    <div class="quot-row">
+      <div class="quot-label">Solde Ticket Restaurant</div>
+      <div class="quot-value pos">+${fmt(ticketResto)} €</div>
     </div>` : ''}
     <div class="quot-row">
-      <div class="quot-label">Solde prévisionnel après charges et carte</div>
-      <div class="quot-value ${soldeApresCharges >= 0 ? 'pos' : 'neg'}">${fmt(soldeApresCharges)} €</div>
+      <div class="quot-label">Argent disponible (compte + TR)</div>
+      <div class="quot-value ${argentDisponible >= 0 ? 'pos' : 'neg'}">${fmt(argentDisponible)} €</div>
     </div>
     <div class="quot-row">
       <div class="quot-label">Budget/jour (${joursRestants} j restants)</div>
       <div class="quot-value ${budgetCls}">${fmt(budgetJour)} €/j</div>
     </div>
-    ${saved.ticketResto != null ? `
-    <div class="quot-row">
-      <div class="quot-label">Solde Ticket Restaurant</div>
-      <div class="quot-value">${fmt(saved.ticketResto)} €</div>
-    </div>` : ''}
     <div class="quot-updated">Mis à jour ${saved.updatedAt ? new Date(saved.updatedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
   `;
+}
+
+function renderQuotObjectif(saved) {
+  const el = document.getElementById('quotObjectif');
+  if (!el) return;
+
+  if (saved.compteCourant == null) {
+    el.innerHTML = `<p class="quot-objectif-empty">Renseignez votre solde de compte courant pour suivre votre objectif de dépenses.</p>`;
+    return;
+  }
+  if (!sheetReference) {
+    el.innerHTML = `<p class="quot-objectif-empty">Chargez vos données (Google Sheet ou CSV) pour activer le suivi de l'objectif de dépenses.</p>`;
+    return;
+  }
+
+  const today = new Date().getDate();
+  const chargesFixesPayees = chargesPayeesMontant(today);
+  // Solde théorique si aucune dépense discrétionnaire n'avait eu lieu depuis
+  // le dernier relevé Sheet : solde de référence + revenu du mois − charges
+  // fixes déjà prélevées (la carte à débit différé n'a pas encore débité,
+  // elle est donc exclue de ce calcul).
+  const soldeTheorique = sheetReference.liquidites + sheetReference.revenu - chargesFixesPayees;
+  const depenses = soldeTheorique - saved.compteCourant;
+  const pct = Math.min(Math.max((depenses / OBJECTIF_DEPENSES_HORS_TR) * 100, 0), 100);
+  const depasse = depenses > OBJECTIF_DEPENSES_HORS_TR;
+
+  el.innerHTML = `
+    <div class="quot-objectif-head">
+      <span class="quot-objectif-label">— Objectif dépenses hors Ticket Resto</span>
+      <span class="quot-objectif-value ${depasse ? 'over' : ''}">${fmt(depenses)} € / ${OBJECTIF_DEPENSES_HORS_TR} €</span>
+    </div>
+    <div class="quot-objectif-track">
+      <div class="quot-objectif-fill ${depasse ? 'over' : 'ok'}" style="width:${pct}%"></div>
+    </div>
+    <div class="quot-objectif-sub">
+      ${depasse
+        ? `Dépassement de ${fmt(depenses - OBJECTIF_DEPENSES_HORS_TR)} € par rapport à l'objectif.`
+        : `Reste ${fmt(OBJECTIF_DEPENSES_HORS_TR - depenses)} € avant d'atteindre l'objectif.`}
+      Estimation basée sur le solde du ${monthLabel(sheetReference.date)} (${fmt(sheetReference.liquidites)} €) + revenu estimé ${fmt(sheetReference.revenu)} € − charges payées ${fmt(chargesFixesPayees)} €.
+    </div>
+  `;
+}
+
+function renderQuotidien() {
+  const saved = loadQuotidien();
+  const compteEl = document.getElementById('quotCompte');
+  const carteEl = document.getElementById('quotCarteDiffere');
+  const ticketEl = document.getElementById('quotTicket');
+  if (!compteEl || !carteEl || !ticketEl) return;
+
+  if (document.activeElement !== compteEl && saved.compteCourantExpr != null) compteEl.value = saved.compteCourantExpr;
+  if (document.activeElement !== carteEl && saved.carteDiffere) carteEl.value = Math.abs(saved.carteDiffere);
+  if (document.activeElement !== ticketEl && saved.ticketResto != null) ticketEl.value = saved.ticketResto;
+
+  renderQuotResult(saved);
+  renderQuotObjectif(saved);
 }
 
 function initQuotidien() {
@@ -157,10 +207,16 @@ function initQuotidien() {
     compteEl.classList.remove('invalid');
     compteErrorEl.textContent = '';
 
+    // La carte à débit différé est toujours une sortie d'argent : on force
+    // le signe négatif quel que soit ce qui a été saisi (le clavier mobile
+    // ne propose pas toujours la touche "-").
+    const carteBrut = carteEl.value === '' ? 0 : parseFloat(String(carteEl.value).replace(',', '.'));
+    const carteDiffere = carteBrut ? -Math.abs(carteBrut) : 0;
+
     saveQuotidien({
       compteCourant,
       compteCourantExpr: compteEl.value.trim(),
-      carteDiffere: carteEl.value === '' ? 0 : parseFloat(carteEl.value),
+      carteDiffere,
       ticketResto: ticketEl.value === '' ? null : parseFloat(ticketEl.value),
       updatedAt: new Date().toISOString(),
     });

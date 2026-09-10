@@ -711,6 +711,21 @@
   .quot-empty { font-size: 13px; color: var(--ink-soft); font-style: italic; }
   .quot-note { font-size: 11px; color: var(--ink-mute); font-style: italic; margin-top: 10px; }
 
+  .quot-objectif {
+    margin-top: 16px; padding: 18px 20px;
+    background: #ebe6db; border: 1px solid var(--line); border-radius: 3px;
+  }
+  .quot-objectif-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+  .quot-objectif-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mute); }
+  .quot-objectif-value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; color: var(--ink); }
+  .quot-objectif-value.over { color: var(--danger); }
+  .quot-objectif-track { height: 6px; background: rgba(26,24,21,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+  .quot-objectif-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .quot-objectif-fill.ok { background: var(--positive); }
+  .quot-objectif-fill.over { background: var(--danger); }
+  .quot-objectif-sub { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+  .quot-objectif-empty { font-size: 12px; color: var(--ink-mute); font-style: italic; }
+
   @media (max-width: 860px) {
     .quotidien-box { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
   }

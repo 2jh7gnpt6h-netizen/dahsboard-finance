@@ -1,5 +1,9 @@
   let charts = {};
   let currentRows = null;
+  // Dernier relevé Google Sheet, exposé pour le module "Pilotage quotidien"
+  // (js/quotidien.js) qui s'en sert de point de référence pour estimer les
+  // dépenses du mois en cours. Reste null tant qu'aucune donnée n'est chargée.
+  let sheetReference = null;
 
   // ========== UTILS ==========
   const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(n));
@@ -623,6 +627,12 @@
 
     document.getElementById('helpBox').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
+
+    // Point de référence pour le pilotage quotidien : dernier solde connu
+    // (compte courant + livret) et revenu de ce même mois, pour estimer les
+    // dépenses depuis ce relevé une fois le solde actuel saisi.
+    sheetReference = { liquidites: latest.Liquidites, revenu: latest.Revenu || avgRev, date: latest.Date };
+    if (typeof renderQuotidien === 'function') renderQuotidien();
   }
 
   function chartBaseOpts(unit) {

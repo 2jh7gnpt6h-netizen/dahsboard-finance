@@ -47,3 +47,7 @@ const REMBOURSEMENT_TGV = 227.50;
 // Seuils d'alerte sur les liquidités disponibles (hors caution appartement).
 const SEUIL_LIQUIDITE_ALERTE = 3000;
 const SEUIL_LIQUIDITE_DANGER = 1500;
+
+// Objectif de dépenses discrétionnaires mensuelles, hors Ticket Restaurant
+// (utilisé par le module "Pilotage quotidien").
+const OBJECTIF_DEPENSES_HORS_TR = 200;
