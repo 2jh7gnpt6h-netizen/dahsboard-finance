@@ -48,17 +48,19 @@
         </div>
         <div class="quot-field">
           <label for="quotCarteDiffere">Carte à débit différé (1er du mois prochain)</label>
-          <input type="number" id="quotCarteDiffere" step="0.01" inputmode="decimal" placeholder="-450,00" />
-          <div class="quot-hint">Montant à venir sur le compte courant : entrez-le en négatif</div>
+          <input type="text" id="quotCarteDiffere" inputmode="decimal" autocomplete="off" placeholder="450,00" />
+          <div class="quot-hint">Montant qui sera prélevé — entrez juste le chiffre, il est compté en négatif automatiquement</div>
         </div>
         <div class="quot-field">
           <label for="quotTicket">Solde Ticket Restaurant</label>
           <input type="number" id="quotTicket" step="0.01" inputmode="decimal" placeholder="0,00" />
+          <div class="quot-hint">Inclus dans votre argent disponible du quotidien</div>
         </div>
         <button type="submit" class="file-btn">Mettre à jour</button>
       </form>
       <div class="quot-result" id="quotResult"></div>
     </div>
+    <div class="quot-objectif" id="quotObjectif"></div>
     <p class="quot-note">Saisie manuelle, stockée uniquement dans ce navigateur — ne modifie jamais votre patrimoine (source : Google Sheet).</p>
   </section>
 
