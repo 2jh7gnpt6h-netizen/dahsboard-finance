@@ -719,6 +719,32 @@
   .quot-objectif-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mute); }
   .quot-objectif-value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; color: var(--ink); }
   .quot-objectif-sub { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+  .quot-objectif-row { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 0 0; padding-top: 12px; border-top: 1px dashed var(--line); gap: 12px; flex-wrap: wrap; }
+  .quot-objectif-sublabel { font-size: 12px; color: var(--ink-soft); }
+  .quot-objectif-subvalue { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--ink); }
+  .quot-objectif-subvalue.neg { color: var(--danger); }
+  .quot-objectif-final { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); margin-bottom: 0; }
+
+  .quot-charges-details { margin: 10px 0 2px; }
+  .quot-charges-summary {
+    cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--accent-deep); letter-spacing: 0.02em; padding: 4px 0; user-select: none;
+  }
+  .quot-charges-summary:hover { color: var(--accent); }
+  .quot-charges-list {
+    margin-top: 8px; max-height: 220px; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 3px; background: #fff;
+  }
+  .quot-charge-row {
+    display: grid; grid-template-columns: 20px 26px 1fr auto;
+    gap: 10px; align-items: center; padding: 7px 10px;
+    border-bottom: 1px solid var(--line); font-size: 12px; cursor: pointer;
+  }
+  .quot-charge-row:last-child { border-bottom: none; }
+  .quot-charge-row:hover { background: #f4f1ea; }
+  .quot-charge-day { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); text-align: center; }
+  .quot-charge-name { color: var(--ink); }
+  .quot-charge-amount { font-family: 'JetBrains Mono', monospace; color: var(--ink-soft); text-align: right; }
   .quot-objectif-empty { font-size: 12px; color: var(--ink-mute); font-style: italic; }
 
   @media (max-width: 860px) {

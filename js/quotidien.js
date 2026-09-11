@@ -65,6 +65,32 @@ function evaluerExpression(expr) {
   return result;
 }
 
+// Préserve l'état ouvert/fermé du détail des charges entre deux
+// réaffichages (le innerHTML du bloc est régénéré à chaque rendu).
+let quotChargesOpen = false;
+
+function chargeKey(c) {
+  return c.jour + '_' + c.nom;
+}
+
+// Sélection automatique par défaut : les charges dont le jour de
+// prélèvement tombe strictement après le relevé Sheet et jusqu'à la date
+// de saisie du solde actuel (mêmes mois dans le cas courant ; si le relevé
+// date du mois précédent, on inclut aussi bien la fin de ce mois-là que le
+// début du mois en cours — à affiner manuellement si besoin via la liste).
+function chargesAutoDefault(sheetDate, entryDate) {
+  const sheetDay = sheetDate.getDate();
+  const entryDay = entryDate.getDate();
+  const sameMonth = sheetDate.getFullYear() === entryDate.getFullYear() && sheetDate.getMonth() === entryDate.getMonth();
+  const selection = {};
+  CHARGES.forEach(c => {
+    selection[chargeKey(c)] = sameMonth
+      ? (c.jour > sheetDay && c.jour <= entryDay)
+      : (c.jour > sheetDay || c.jour <= entryDay);
+  });
+  return selection;
+}
+
 function loadQuotidien() {
   try {
     return JSON.parse(localStorage.getItem(QUOTIDIEN_STORAGE_KEY)) || {};
@@ -146,24 +172,78 @@ function renderQuotObjectif(saved) {
     return;
   }
 
-  // Différence entre le solde du dernier relevé Google Sheet et le solde
-  // actuel saisi, en réintégrant la carte à débit différé : cet argent est
-  // déjà dépensé (achats faits sur la carte) même s'il n'a pas encore
-  // quitté le compte courant, donc il doit compter dans la vraie dépense.
+  // Date à laquelle le solde actuel a été saisi — c'est elle (pas "aujourd'hui")
+  // qui sert de borne pour repérer les charges fixes tombées entre les deux
+  // relevés, au cas où le dashboard est simplement rouvert plus tard.
+  const entryDate = saved.updatedAt ? new Date(saved.updatedAt) : new Date();
+  if (!saved.chargesManuelles) {
+    saved.chargesManuelles = chargesAutoDefault(new Date(sheetReference.date), entryDate);
+    saveQuotidien(saved);
+  }
+
+  // Dépense brute : différence entre le solde du relevé Sheet et le solde
+  // actuel, carte à débit différé réintégrée (déjà dépensée, pas encore
+  // débitée). On en retire ensuite les charges fixes cochées ci-dessous
+  // pour isoler la dépense "libre".
   const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
   const soldeActuelEffectif = saved.compteCourant + carteDiffere;
-  const depenses = sheetReference.liquidites - soldeActuelEffectif;
+  const depenseBrute = sheetReference.liquidites - soldeActuelEffectif;
+  const chargesSelectionnees = CHARGES.filter(c => saved.chargesManuelles[chargeKey(c)]);
+  const totalCharges = chargesSelectionnees.reduce((s, c) => s + c.montant, 0);
+  const depenseHorsCharges = depenseBrute - totalCharges;
+
   const dateReference = new Date(sheetReference.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const dateEntree = entryDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const checklistRows = CHARGES.map(c => {
+    const key = chargeKey(c);
+    const checked = !!saved.chargesManuelles[key];
+    return `
+      <label class="quot-charge-row">
+        <input type="checkbox" class="quot-charge-check" data-key="${key}" ${checked ? 'checked' : ''} />
+        <span class="quot-charge-day">${c.jour}</span>
+        <span class="quot-charge-name">${c.nom}</span>
+        <span class="quot-charge-amount">${fmt(c.montant)} €</span>
+      </label>`;
+  }).join('');
 
   el.innerHTML = `
     <div class="quot-objectif-head">
-      <span class="quot-objectif-label">— Dépensé depuis le relevé Google Sheet</span>
-      <span class="quot-objectif-value">${fmt(depenses)} €</span>
+      <span class="quot-objectif-label">— Dépense totale (charges fixes comprises)</span>
+      <span class="quot-objectif-value">${fmt(depenseBrute)} €</span>
     </div>
     <div class="quot-objectif-sub">
-      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde actuel (${fmt(saved.compteCourant)} €)${carteDiffere !== 0 ? ` + carte à débit différé à venir (${fmt(-carteDiffere)} €)` : ''}.
+      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde du ${dateEntree} (${fmt(saved.compteCourant)} €)${carteDiffere !== 0 ? ` + carte à débit différé à venir (${fmt(-carteDiffere)} €)` : ''}.
+    </div>
+
+    <div class="quot-objectif-row">
+      <span class="quot-objectif-sublabel">Dont charges fixes prélevées entre les deux dates</span>
+      <span class="quot-objectif-subvalue neg">−${fmt(totalCharges)} €</span>
+    </div>
+
+    <details class="quot-charges-details" id="quotChargesDetails" ${quotChargesOpen ? 'open' : ''}>
+      <summary class="quot-charges-summary">Voir / corriger les charges prises en compte (${chargesSelectionnees.length}/${CHARGES.length})</summary>
+      <div class="quot-charges-list">${checklistRows}</div>
+    </details>
+
+    <div class="quot-objectif-head quot-objectif-final">
+      <span class="quot-objectif-label">— Dépense hors charges fixes</span>
+      <span class="quot-objectif-value">${fmt(depenseHorsCharges)} €</span>
     </div>
   `;
+
+  const details = document.getElementById('quotChargesDetails');
+  if (details) details.addEventListener('toggle', () => { quotChargesOpen = details.open; });
+
+  el.querySelectorAll('.quot-charge-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const current = loadQuotidien();
+      if (!current.chargesManuelles) current.chargesManuelles = {};
+      current.chargesManuelles[cb.dataset.key] = cb.checked;
+      saveQuotidien(current);
+      renderQuotObjectif(current);
+    });
+  });
 }
 
 function renderQuotidien() {
@@ -208,14 +288,23 @@ function initQuotidien() {
     // ne propose pas toujours la touche "-").
     const carteBrut = carteEl.value === '' ? 0 : parseFloat(String(carteEl.value).replace(',', '.'));
     const carteDiffere = carteBrut ? -Math.abs(carteBrut) : 0;
+    const updatedAt = new Date();
 
-    saveQuotidien({
+    const data = {
       compteCourant,
       compteCourantExpr: compteEl.value.trim(),
       carteDiffere,
       ticketResto: ticketEl.value === '' ? null : parseFloat(ticketEl.value),
-      updatedAt: new Date().toISOString(),
-    });
+      updatedAt: updatedAt.toISOString(),
+    };
+    // Nouvelle saisie de solde = nouvelle fenêtre de dates : on recalcule la
+    // sélection automatique des charges fixes tombées entre les deux relevés
+    // (l'utilisateur pourra la corriger manuellement juste après).
+    if (sheetReference) {
+      data.chargesManuelles = chargesAutoDefault(new Date(sheetReference.date), updatedAt);
+    }
+
+    saveQuotidien(data);
     renderQuotidien();
   });
 
