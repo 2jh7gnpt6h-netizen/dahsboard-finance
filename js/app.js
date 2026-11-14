@@ -577,7 +577,12 @@ function renderCharts(m) {
   const marches = b.map(x => x.dMarche || 0);
   const valeurs = b.map(x => investedValue(x.row));
   const plusValues = b.map(x => x.pv);
+  // Chaque graphique reçoit ses propres options : Chart.js réécrit l'objet
+  // qu'on lui passe (il y range les réglages propres au type de graphique),
+  // et un objet partagé ferait hériter un histogramme des réglages d'une courbe.
   const base = chartBaseOpts('€');
+  const optionsPlusValues = chartBaseOpts('€');
+  optionsPlusValues.plugins.legend = { display: false };
   const selonSigne = (xs, positif, negatif) => xs.map(v => (v >= 0 ? positif : negatif));
   const courbe = (label, data, extra) => ({ label, data, tension: 0.35, pointRadius: 2, pointHoverRadius: 5, backgroundColor: 'transparent', ...extra });
 
@@ -626,7 +631,7 @@ function renderCharts(m) {
         courbe('Capital investi', b.map(x => capInvested(x.row)), { borderColor: `rgb(${OR})`, backgroundColor: `rgba(${OR}, 0.10)`, borderWidth: 2, borderDash: [6, 5], fill: '-1' }),
       ],
     },
-    options: base,
+    options: chartBaseOpts('€'),
   });
 
   makeChart('pvChart', {
@@ -639,7 +644,7 @@ function renderCharts(m) {
         borderColor: selonSigne(plusValues, `rgb(${VERT})`, `rgb(${ROUGE})`),
       }],
     },
-    options: { ...base, plugins: { ...base.plugins, legend: { display: false } } },
+    options: optionsPlusValues,
   });
 
   makeChart('historyChart', {
@@ -652,7 +657,7 @@ function renderCharts(m) {
         courbe('Liquidités', b.map(x => x.row.Liquidites), { borderColor: '#857e72', borderWidth: 1.5, borderDash: [2, 3] }),
       ],
     },
-    options: base,
+    options: chartBaseOpts('€'),
   });
 }
 
