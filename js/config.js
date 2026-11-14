@@ -1,6 +1,6 @@
 // ===== CONFIGURATION PERSONNELLE =====
 // Toutes les valeurs spécifiques à votre situation vivent ici.
-// Le reste du code (app.js) ne contient plus aucune donnée personnelle.
+// Le reste du code ne contient aucune donnée personnelle.
 
 // Âge actuel — utilisé dans l'en-tête et les projections.
 const CURRENT_AGE = 29;
@@ -20,6 +20,16 @@ const QUOTIDIEN_STORAGE_KEY = 'patrimoine_quotidien_v1';
 // Jalons de patrimoine net à suivre, en euros, ordre croissant.
 // Le dernier jalon sert aussi de cible pour la barre de progression principale.
 const JALONS = [30000, 50000, 75000, 100000];
+
+// Enveloppes d'investissement : libellé, établissement et couleur affichés.
+// `key` reprend le nom de la colonne du Sheet (PEA, AV, PEE, CTO, Crypto).
+const POSTES = [
+  { key: 'PEA',    label: 'PEA',           note: 'Bourso',              color: '#1a1815' },
+  { key: 'AV',     label: 'Assurance-vie', note: 'Mon Petit Placement', color: '#5e4820' },
+  { key: 'PEE',    label: 'PEE',           note: 'Amundi',              color: '#8b6b2f' },
+  { key: 'CTO',    label: 'CTO',           note: 'Revolut + Bourso',    color: '#b08a42' },
+  { key: 'Crypto', label: 'Crypto',        note: 'Coinbase + Rayn',     color: '#a85a2a' },
+];
 
 // Charges fixes mensuelles : jour de prélèvement, libellé, montant en euros.
 const CHARGES = [
