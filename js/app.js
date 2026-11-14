@@ -250,7 +250,7 @@ function renderBudgetRestant(m) {
       <div class="budget-value warn">−${fmt(chargesRestantesMontant(jour))} €</div>
     </div>
     <div>
-      <div class="budget-label">Disponible net (après Circana)</div>
+      <div class="budget-label">Disponible net (après remb. employeur)</div>
       <div class="budget-value ${cls}">${fmt(disponible)} €</div>
     </div>
   `;
@@ -477,11 +477,11 @@ function renderStatsAvancees(m) {
     const taux = (charges) => (revenuNormal > 0 ? `${dec(charges / revenuNormal * 100)} % du revenu` : '—');
     carteTgv = carte('🚄 Impact remboursement TGV Max',
       ligne('Coût brut TGV Max', `−${fmt(tgv.montant)} €/mois`, 'neg') +
-      ligne('Remboursement Circana', `+${fmt(REMBOURSEMENT_TGV)} €/mois`, 'pos') +
+      ligne('Remboursement employeur', `+${fmt(REMBOURSEMENT_TGV)} €/mois`, 'pos') +
       ligne('Coût net réel', `${fmt(tgv.montant - REMBOURSEMENT_TGV)} €/mois`) +
       ligne('Taux charges brut', taux(TOTAL_CHARGES), 'warn') +
       ligne('Taux charges net (après remb.)', taux(TOTAL_CHARGES - REMBOURSEMENT_TGV), 'pos') +
-      ligne('Économie annuelle Circana', `+${fmt(REMBOURSEMENT_TGV * 12)} €/an`, 'pos'));
+      ligne('Économie annuelle (remboursement)', `+${fmt(REMBOURSEMENT_TGV * 12)} €/an`, 'pos'));
   }
 
   el.innerHTML = carteSeries + cartePrimes + carteLiquidites + carteTgv;
