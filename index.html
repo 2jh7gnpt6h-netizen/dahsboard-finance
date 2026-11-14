@@ -5,11 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <meta name="color-scheme" content="light only" />
 <meta name="theme-color" content="#f4f1ea" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Patrimoine" />
 <title>Patrimoine — Dashboard</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="manifest" href="manifest.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?v=2" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
@@ -19,11 +26,26 @@
   <div class="data-bar" id="dataBar">
     <label>Source</label>
     <span class="status" id="status">Chargement depuis Google Sheets...</span>
-    <button class="file-btn" id="refreshBtn" onclick="loadFromSheet()">↻ Actualiser</button>
+    <button class="file-btn" id="refreshBtn">↻ Actualiser</button>
     <button class="file-btn secondary" id="loadBtn">Charger un CSV local</button>
-    <button class="file-btn secondary" id="clearBtn" onclick="clearCache()">🗑 Effacer le cache</button>
-    <input type="file" id="fileInput" accept=".csv" style="display:none;" />
+    <button class="file-btn secondary" id="clearBtn">🗑 Effacer le cache</button>
+    <input type="file" id="fileInput" accept=".csv" />
   </div>
+
+  <!-- NAVIGATION ENTRE SECTIONS (affichée une fois les données chargées) -->
+  <nav class="section-nav hidden" id="sectionNav" aria-label="Sections du dashboard">
+    <a href="#quotidienSection">Quotidien</a>
+    <a href="#sec-patrimoine">Patrimoine</a>
+    <a href="#sec-jalons">Jalons</a>
+    <a href="#sec-charges">Charges</a>
+    <a href="#sec-performance">Performance</a>
+    <a href="#sec-indicateurs">Indicateurs</a>
+    <a href="#sec-variation">Variation</a>
+    <a href="#sec-graphiques">Graphiques</a>
+    <a href="#sec-projections">Projections</a>
+    <a href="#sec-allocation">Allocation</a>
+    <a href="#sec-historique">Historique</a>
+  </nav>
 
   <!-- HELP BOX -->
   <div class="state-box" id="helpBox">
@@ -79,12 +101,12 @@
     </header>
 
     <!-- HERO -->
-    <section class="hero fade-in d1">
+    <section class="hero fade-in d1" id="sec-patrimoine">
       <div>
         <div class="hero-label">● Patrimoine net</div>
         <div class="hero-value mono"><span id="net-worth">—</span><span class="currency">€</span></div>
-        <div class="hero-sub">Dernier relevé mensuel</div>
-        <div class="hero-delta" id="heroDelta"></div>
+        <div class="hero-sub" id="heroSub">Dernier relevé mensuel</div>
+        <div class="hero-deltas" id="heroDeltas"></div>
       </div>
       <div class="hero-split">
         <div class="item">
@@ -111,7 +133,7 @@
     </section>
 
     <!-- SECTION JALONS -->
-    <div class="section-head fade-in d2">
+    <div class="section-head fade-in d2" id="sec-jalons">
       <span class="section-num">— /</span>
       <h2 class="section-title">Jalons patrimoniaux</h2>
       <span class="section-rule"></span>
@@ -120,7 +142,7 @@
     <section class="jalons-section fade-in d2" id="jalonsSection"></section>
 
     <!-- SECTION CHARGES FIXES -->
-    <div class="section-head fade-in d2">
+    <div class="section-head fade-in d2" id="sec-charges">
       <span class="section-num">00 /</span>
       <h2 class="section-title">Charges fixes du mois</h2>
       <span class="section-rule"></span>
@@ -157,7 +179,7 @@
     </section>
 
     <!-- SECTION 1 : PERFORMANCE -->
-    <div class="section-head fade-in d2">
+    <div class="section-head fade-in d2" id="sec-performance">
       <span class="section-num">01 /</span>
       <h2 class="section-title">Performance de vos placements</h2>
       <span class="section-rule"></span>
@@ -193,16 +215,17 @@
       <div class="poste-row header">
         <div>Poste</div>
         <div>Capital vs Valeur</div>
-        <div style="text-align:right;">Investi</div>
-        <div style="text-align:right;">Valeur</div>
-        <div style="text-align:right;">PV €</div>
-        <div style="text-align:right;">Perf</div>
+        <div class="droite">Valeur</div>
+        <div class="droite">Investi</div>
+        <div class="droite">PV €</div>
+        <div class="droite">Perf</div>
       </div>
       <div id="posteList"></div>
+      <p class="poste-note" id="posteNote" hidden>%/an : rendement annualisé depuis le premier relevé du Sheet, pondéré par les dates de versement (les gains antérieurs au suivi n'y comptent pas).</p>
     </section>
 
     <!-- SECTION 3 : KPIs AVANCÉS -->
-    <div class="section-head fade-in d3">
+    <div class="section-head fade-in d3" id="sec-indicateurs">
       <span class="section-num">03 /</span>
       <h2 class="section-title">Indicateurs clés</h2>
       <span class="section-rule"></span>
@@ -287,7 +310,7 @@
     <section class="stats-grid fade-in d3" id="statsAvancees"></section>
 
     <!-- SECTION 3b : DÉCOMPOSITION DELTA -->
-    <div class="section-head fade-in d3">
+    <div class="section-head fade-in d3" id="sec-variation">
       <span class="section-num">04 /</span>
       <h2 class="section-title">Décomposition de la variation mensuelle</h2>
       <span class="section-rule"></span>
@@ -315,20 +338,22 @@
     </section>
 
     <!-- Graphique historique décomposé -->
-    <section class="chart-box fade-in d3" style="margin-bottom:48px;">
+    <section class="chart-box fade-in d3">
+      <div class="chart-tools"></div>
       <div class="chart-wrap small">
         <canvas id="deltaChart"></canvas>
       </div>
     </section>
 
     <!-- SECTION 5 : GRAPHIQUES -->
-    <div class="section-head fade-in d4">
+    <div class="section-head fade-in d4" id="sec-graphiques">
       <span class="section-num">05 /</span>
       <h2 class="section-title">Capital investi vs Valeur marché</h2>
       <span class="section-rule"></span>
     </div>
 
     <section class="chart-box fade-in d4">
+      <div class="chart-tools"></div>
       <div class="chart-wrap">
         <canvas id="investVsValueChart"></canvas>
       </div>
@@ -341,6 +366,7 @@
     </div>
 
     <section class="chart-box fade-in d4">
+      <div class="chart-tools"></div>
       <div class="chart-wrap small">
         <canvas id="pvChart"></canvas>
       </div>
@@ -353,13 +379,14 @@
     </div>
 
     <section class="chart-box fade-in d4">
+      <div class="chart-tools"></div>
       <div class="chart-wrap">
         <canvas id="historyChart"></canvas>
       </div>
     </section>
 
     <!-- SECTION 5 : PROJECTIONS -->
-    <div class="section-head fade-in d4">
+    <div class="section-head fade-in d4" id="sec-projections">
       <span class="section-num">08 /</span>
       <h2 class="section-title">Projections à long terme</h2>
       <span class="section-rule"></span>
@@ -398,7 +425,7 @@
     </section>
 
     <!-- SECTION 6 : ALLOCATION -->
-    <div class="section-head fade-in d5">
+    <div class="section-head fade-in d5" id="sec-allocation">
       <span class="section-num">09 /</span>
       <h2 class="section-title">Allocation actuelle</h2>
       <span class="section-rule"></span>
@@ -412,7 +439,7 @@
     </section>
 
     <!-- SECTION 7 : HISTORIQUE -->
-    <div class="section-head fade-in d5">
+    <div class="section-head fade-in d5" id="sec-historique">
       <span class="section-num">10 /</span>
       <h2 class="section-title">Historique mensuel</h2>
       <span class="section-rule"></span>
@@ -445,15 +472,9 @@
     <!-- EXPORT -->
     <div class="export-bar fade-in d5">
       <span class="export-label">Exporter pour IA / tableur</span>
-      <button class="export-btn-pill" onclick="exportHistoryCSV()">
-        ⬇ CSV
-      </button>
-      <button class="export-btn-pill" onclick="exportHistoryMarkdown()">
-        ⬇ Markdown (IA)
-      </button>
-      <button class="export-btn-pill" onclick="copyHistoryMarkdown()">
-        ⎘ Copier pour IA
-      </button>
+      <button class="export-btn-pill" id="exportCsvBtn">⬇ CSV</button>
+      <button class="export-btn-pill" id="exportMdBtn">⬇ Markdown (IA)</button>
+      <button class="export-btn-pill" id="copyMdBtn">⎘ Copier pour IA</button>
     </div>
 
     <div class="note">
@@ -462,8 +483,10 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/app.js"></script>
-<script src="js/quotidien.js"></script>
+<!-- Après une modification, augmenter le numéro ?v= pour que les navigateurs rechargent les fichiers. -->
+<script src="js/config.js?v=2"></script>
+<script src="js/calculs.js?v=2"></script>
+<script src="js/quotidien.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
 </body>
 </html>

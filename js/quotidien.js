@@ -5,91 +5,11 @@
 // de vérité pour ça. Sert uniquement à piloter le budget du quotidien
 // entre deux relevés.
 
-// Évalue une expression arithmétique simple ("1200 + 350 - 80") sans eval(),
-// pour permettre d'additionner plusieurs comptes en toute sécurité.
-function evaluerExpression(expr) {
-  const clean = String(expr).trim().replace(/,/g, '.');
-  if (clean === '') return null;
-  if (!/^[0-9+\-*/().\s]+$/.test(clean)) throw new Error('caractères invalides');
-
-  let pos = 0;
-  const peek = () => clean[pos];
-  const skipSpaces = () => { while (clean[pos] === ' ') pos++; };
-
-  function parseNumber() {
-    skipSpaces();
-    const start = pos;
-    while (pos < clean.length && /[0-9.]/.test(clean[pos])) pos++;
-    if (pos === start) throw new Error('nombre attendu');
-    return parseFloat(clean.slice(start, pos));
-  }
-  function parseFactor() {
-    skipSpaces();
-    if (peek() === '(') {
-      pos++;
-      const v = parseExpr();
-      skipSpaces();
-      if (peek() !== ')') throw new Error('parenthèse manquante');
-      pos++;
-      return v;
-    }
-    if (peek() === '-') { pos++; return -parseFactor(); }
-    if (peek() === '+') { pos++; return parseFactor(); }
-    return parseNumber();
-  }
-  function parseTerm() {
-    let v = parseFactor();
-    skipSpaces();
-    while (peek() === '*' || peek() === '/') {
-      const op = peek(); pos++;
-      v = op === '*' ? v * parseFactor() : v / parseFactor();
-      skipSpaces();
-    }
-    return v;
-  }
-  function parseExpr() {
-    let v = parseTerm();
-    skipSpaces();
-    while (peek() === '+' || peek() === '-') {
-      const op = peek(); pos++;
-      v = op === '+' ? v + parseTerm() : v - parseTerm();
-      skipSpaces();
-    }
-    return v;
-  }
-
-  const result = parseExpr();
-  skipSpaces();
-  if (pos !== clean.length) throw new Error('expression invalide');
-  if (!isFinite(result)) throw new Error('résultat invalide');
-  return result;
-}
-
-// Préserve l'état ouvert/fermé du détail des charges entre deux
-// réaffichages (le innerHTML du bloc est régénéré à chaque rendu).
+// Le bloc des dépenses est régénéré à chaque rendu : on garde ici l'état
+// ouvert/fermé de la liste des charges.
 let quotChargesOpen = false;
 
-function chargeKey(c) {
-  return c.jour + '_' + c.nom;
-}
-
-// Sélection automatique par défaut : les charges dont le jour de
-// prélèvement tombe strictement après le relevé Sheet et jusqu'à la date
-// de saisie du solde actuel (mêmes mois dans le cas courant ; si le relevé
-// date du mois précédent, on inclut aussi bien la fin de ce mois-là que le
-// début du mois en cours — à affiner manuellement si besoin via la liste).
-function chargesAutoDefault(sheetDate, entryDate) {
-  const sheetDay = sheetDate.getDate();
-  const entryDay = entryDate.getDate();
-  const sameMonth = sheetDate.getFullYear() === entryDate.getFullYear() && sheetDate.getMonth() === entryDate.getMonth();
-  const selection = {};
-  CHARGES.forEach(c => {
-    selection[chargeKey(c)] = sameMonth
-      ? (c.jour > sheetDay && c.jour <= entryDay)
-      : (c.jour > sheetDay || c.jour <= entryDay);
-  });
-  return selection;
-}
+const chargeKey = (c) => c.jour + '_' + c.nom;
 
 function loadQuotidien() {
   try {
@@ -105,115 +25,111 @@ function saveQuotidien(data) {
   } catch {}
 }
 
-function renderQuotResult(saved) {
-  const resultEl = document.getElementById('quotResult');
-  if (!resultEl) return;
+// Charges cochées par défaut : celles prélevées après le relevé Sheet et
+// jusqu'au jour de saisie du solde.
+function chargesAutoDefault(debut, fin) {
+  const selection = {};
+  CHARGES.forEach(c => { selection[chargeKey(c)] = occurrencesCharge(c, debut, fin) > 0; });
+  return selection;
+}
 
+function renderQuotResult(saved) {
+  const el = $('quotResult');
   if (saved.compteCourant == null) {
-    resultEl.innerHTML = `<p class="quot-empty">Renseignez votre solde de compte courant pour estimer votre budget disponible jusqu'à la fin du mois.</p>`;
+    el.innerHTML = '<p class="quot-empty">Renseignez votre solde de compte courant pour estimer votre budget disponible jusqu\'à la fin du mois.</p>';
     return;
   }
 
-  const today = new Date().getDate();
-  const restantes = chargesRestantesMontant(today);
+  const restantes = chargesRestantesMontant();
   const joursRestants = Math.max(joursRestantsDansLeMois(), 1);
   const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
   const ticketResto = saved.ticketResto || 0;
-  const soldeApresCharges = saved.compteCourant - restantes + carteDiffere;
-  const argentDisponible = soldeApresCharges + ticketResto;
-  const budgetJour = argentDisponible / joursRestants;
-  const budgetCls = budgetJour > 20 ? 'pos' : budgetJour > 0 ? 'warn' : 'neg';
+  const horsTR = saved.compteCourant - restantes + carteDiffere;
+  const avecTR = horsTR + ticketResto;
+  const budgetJour = avecTR / joursRestants;
 
-  resultEl.innerHTML = `
+  const ligne = (label, valeur, cls = '') => `
     <div class="quot-row">
-      <div class="quot-label">Total compte(s) courant(s)</div>
-      <div class="quot-value">${fmt(saved.compteCourant)} €</div>
-    </div>
-    <div class="quot-row">
-      <div class="quot-label">Charges fixes restantes ce mois</div>
-      <div class="quot-value neg">−${fmt(restantes)} €</div>
-    </div>
-    ${carteDiffere !== 0 ? `
-    <div class="quot-row">
-      <div class="quot-label">Carte à débit différé (mois prochain)</div>
-      <div class="quot-value neg">${fmt(carteDiffere)} €</div>
-    </div>` : ''}
-    <div class="quot-row">
-      <div class="quot-label">Solde disponible hors Ticket Resto</div>
-      <div class="quot-value ${soldeApresCharges >= 0 ? 'pos' : 'neg'}">${fmt(soldeApresCharges)} €</div>
-    </div>
-    ${ticketResto !== 0 ? `
-    <div class="quot-row">
-      <div class="quot-label">Solde Ticket Restaurant</div>
-      <div class="quot-value pos">+${fmt(ticketResto)} €</div>
-    </div>
-    <div class="quot-row">
-      <div class="quot-label">Solde disponible avec Ticket Resto</div>
-      <div class="quot-value ${argentDisponible >= 0 ? 'pos' : 'neg'}">${fmt(argentDisponible)} €</div>
-    </div>` : ''}
-    <div class="quot-row">
-      <div class="quot-label">Budget/jour (${joursRestants} j restants)</div>
-      <div class="quot-value ${budgetCls}">${fmt(budgetJour)} €/j</div>
-    </div>
-    <div class="quot-updated">Mis à jour ${saved.updatedAt ? new Date(saved.updatedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
-  `;
+      <div class="quot-label">${label}</div>
+      <div class="quot-value ${cls}">${valeur}</div>
+    </div>`;
+
+  el.innerHTML =
+    ligne('Total compte(s) courant(s)', `${fmt(saved.compteCourant)} €`) +
+    ligne('Charges fixes restantes ce mois', `−${fmt(restantes)} €`, 'neg') +
+    (carteDiffere !== 0 ? ligne('Carte à débit différé (mois prochain)', `${fmt(carteDiffere)} €`, 'neg') : '') +
+    ligne('Solde disponible hors Ticket Resto', `${fmt(horsTR)} €`, signe(horsTR)) +
+    (ticketResto !== 0
+      ? ligne('Solde Ticket Restaurant', `+${fmt(ticketResto)} €`, 'pos') +
+        ligne('Solde disponible avec Ticket Resto', `${fmt(avecTR)} €`, signe(avecTR))
+      : '') +
+    ligne(`Budget/jour (${joursRestants} j restants)`, `${fmt(budgetJour)} €/j`, budgetJour > 20 ? 'pos' : budgetJour > 0 ? 'warn' : 'neg') +
+    `<div class="quot-updated">Mis à jour ${saved.updatedAt ? dateHeure(new Date(saved.updatedAt)) : '—'}</div>`;
 }
 
+// Dépenses depuis le dernier relevé Google Sheet : total, part des charges
+// fixes, et reste ("hors charges fixes").
 function renderQuotObjectif(saved) {
-  const el = document.getElementById('quotObjectif');
-  if (!el) return;
+  const el = $('quotObjectif');
+  const message = (texte) => { el.innerHTML = `<p class="quot-objectif-empty">${texte}</p>`; };
 
   if (saved.compteCourant == null) {
-    el.innerHTML = `<p class="quot-objectif-empty">Renseignez votre solde de compte courant pour suivre vos dépenses depuis le dernier relevé.</p>`;
-    return;
+    return message('Renseignez votre solde de compte courant pour suivre vos dépenses depuis le dernier relevé.');
   }
   if (!sheetReference) {
-    el.innerHTML = `<p class="quot-objectif-empty">Chargez vos données (Google Sheet ou CSV) pour activer le suivi des dépenses.</p>`;
-    return;
+    return message('Chargez vos données (Google Sheet ou CSV) pour activer le suivi des dépenses.');
   }
 
-  // Date à laquelle le solde actuel a été saisi — c'est elle (pas "aujourd'hui")
-  // qui sert de borne pour repérer les charges fixes tombées entre les deux
-  // relevés, au cas où le dashboard est simplement rouvert plus tard.
-  const entryDate = saved.updatedAt ? new Date(saved.updatedAt) : new Date();
-  if (!saved.chargesManuelles) {
-    saved.chargesManuelles = chargesAutoDefault(new Date(sheetReference.date), entryDate);
+  // La période va du relevé Sheet au jour où le solde a été saisi — pas à
+  // "aujourd'hui", pour rester juste si la page est simplement rouverte plus tard.
+  const releve = parseLocalDate(sheetReference.date);
+  const saisie = saved.updatedAt ? new Date(saved.updatedAt) : new Date();
+  const jours = joursEntre(releve, saisie);
+  if (jours < 0) {
+    return message(`Le relevé Google Sheet du ${dateLongue(sheetReference.date)} est plus récent que votre dernier solde saisi (${dateHeure(saisie)}). Saisissez votre solde actuel pour suivre vos dépenses depuis ce relevé.`);
+  }
+
+  // La sélection des charges vaut pour un relevé donné : si le relevé de
+  // référence a changé, on repart de la détection automatique.
+  if (!saved.chargesManuelles || (saved.chargesRef && saved.chargesRef !== sheetReference.date)) {
+    saved.chargesManuelles = chargesAutoDefault(releve, saisie);
+  }
+  if (saved.chargesRef !== sheetReference.date) {
+    saved.chargesRef = sheetReference.date;
     saveQuotidien(saved);
   }
 
-  // Dépense brute : différence entre le solde du relevé Sheet et le solde
-  // actuel, carte à débit différé réintégrée (déjà dépensée, pas encore
-  // débitée). On en retire ensuite les charges fixes cochées ci-dessous
-  // pour isoler la dépense "libre".
+  // Dépense totale : écart entre le solde du relevé et le solde actuel. La
+  // carte à débit différé est déjà dépensée même si elle n'est pas encore
+  // débitée : elle compte. On retire ensuite les charges fixes cochées.
   const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
-  const soldeActuelEffectif = saved.compteCourant + carteDiffere;
-  const depenseBrute = sheetReference.liquidites - soldeActuelEffectif;
-  const chargesSelectionnees = CHARGES.filter(c => saved.chargesManuelles[chargeKey(c)]);
-  const totalCharges = chargesSelectionnees.reduce((s, c) => s + c.montant, 0);
-  const depenseHorsCharges = depenseBrute - totalCharges;
+  const depenseTotale = sheetReference.liquidites - (saved.compteCourant + carteDiffere);
+  const charges = CHARGES.map(c => ({
+    ...c,
+    key: chargeKey(c),
+    cochee: !!saved.chargesManuelles[chargeKey(c)],
+    // Une charge cochée à la main hors période compte pour un prélèvement.
+    fois: Math.max(occurrencesCharge(c, releve, saisie), 1),
+  }));
+  const cochees = charges.filter(c => c.cochee);
+  const totalCharges = cochees.reduce((s, c) => s + c.montant * c.fois, 0);
+  const depenseLibre = depenseTotale - totalCharges;
 
-  const dateReference = new Date(sheetReference.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-  const dateEntree = entryDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const checklistRows = CHARGES.map(c => {
-    const key = chargeKey(c);
-    const checked = !!saved.chargesManuelles[key];
-    return `
-      <label class="quot-charge-row">
-        <input type="checkbox" class="quot-charge-check" data-key="${key}" ${checked ? 'checked' : ''} />
-        <span class="quot-charge-day">${c.jour}</span>
-        <span class="quot-charge-name">${c.nom}</span>
-        <span class="quot-charge-amount">${fmt(c.montant)} €</span>
-      </label>`;
-  }).join('');
+  const liste = charges.map(c => `
+    <label class="quot-charge-row">
+      <input type="checkbox" class="quot-charge-check" data-key="${esc(c.key)}" ${c.cochee ? 'checked' : ''} />
+      <span class="quot-charge-day">${c.jour}</span>
+      <span class="quot-charge-name">${esc(c.nom)}</span>
+      <span class="quot-charge-amount">${fmt(c.montant)} €${c.fois > 1 ? ` × ${c.fois}` : ''}</span>
+    </label>`).join('');
 
   el.innerHTML = `
     <div class="quot-objectif-head">
       <span class="quot-objectif-label">— Dépense totale (charges fixes comprises)</span>
-      <span class="quot-objectif-value">${fmt(depenseBrute)} €</span>
+      <span class="quot-objectif-value">${fmt(depenseTotale)} €</span>
     </div>
     <div class="quot-objectif-sub">
-      Solde du ${dateReference} (${fmt(sheetReference.liquidites)} €) − solde du ${dateEntree} (${fmt(saved.compteCourant)} €)${carteDiffere !== 0 ? ` + carte à débit différé à venir (${fmt(-carteDiffere)} €)` : ''}.
+      Solde du ${dateLongue(sheetReference.date)} (${fmt(sheetReference.liquidites)} €) − solde du ${saisie.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (${fmt(saved.compteCourant)} €)${carteDiffere !== 0 ? ` + carte à débit différé à venir (${fmt(-carteDiffere)} €)` : ''}.
     </div>
 
     <div class="quot-objectif-row">
@@ -222,86 +138,75 @@ function renderQuotObjectif(saved) {
     </div>
 
     <details class="quot-charges-details" id="quotChargesDetails" ${quotChargesOpen ? 'open' : ''}>
-      <summary class="quot-charges-summary">Voir / corriger les charges prises en compte (${chargesSelectionnees.length}/${CHARGES.length})</summary>
-      <div class="quot-charges-list">${checklistRows}</div>
+      <summary class="quot-charges-summary">Voir / corriger les charges prises en compte (${cochees.length}/${CHARGES.length})</summary>
+      <div class="quot-charges-list">${liste}</div>
     </details>
 
     <div class="quot-objectif-head quot-objectif-final">
       <span class="quot-objectif-label">— Dépense hors charges fixes</span>
-      <span class="quot-objectif-value">${fmt(depenseHorsCharges)} €</span>
+      <span class="quot-objectif-value">${fmt(depenseLibre)} €</span>
     </div>
+    ${jours >= 1 ? `<div class="quot-objectif-sub">Soit ${fmt(depenseLibre / jours)} €/jour en moyenne depuis le relevé (${pluriel(jours, 'jour')}).</div>` : ''}
   `;
 
-  const details = document.getElementById('quotChargesDetails');
-  if (details) details.addEventListener('toggle', () => { quotChargesOpen = details.open; });
-
-  el.querySelectorAll('.quot-charge-check').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const current = loadQuotidien();
-      if (!current.chargesManuelles) current.chargesManuelles = {};
-      current.chargesManuelles[cb.dataset.key] = cb.checked;
-      saveQuotidien(current);
-      renderQuotObjectif(current);
+  $('quotChargesDetails').addEventListener('toggle', (e) => { quotChargesOpen = e.currentTarget.open; });
+  el.querySelectorAll('.quot-charge-check').forEach(caseACocher => {
+    caseACocher.addEventListener('change', () => {
+      const actuel = loadQuotidien();
+      actuel.chargesManuelles = { ...actuel.chargesManuelles, [caseACocher.dataset.key]: caseACocher.checked };
+      saveQuotidien(actuel);
+      renderQuotObjectif(actuel);
     });
   });
 }
 
 function renderQuotidien() {
   const saved = loadQuotidien();
-  const compteEl = document.getElementById('quotCompte');
-  const carteEl = document.getElementById('quotCarteDiffere');
-  const ticketEl = document.getElementById('quotTicket');
-  if (!compteEl || !carteEl || !ticketEl) return;
-
-  if (document.activeElement !== compteEl && saved.compteCourantExpr != null) compteEl.value = saved.compteCourantExpr;
-  if (document.activeElement !== carteEl && saved.carteDiffere) carteEl.value = Math.abs(saved.carteDiffere);
-  if (document.activeElement !== ticketEl && saved.ticketResto != null) ticketEl.value = saved.ticketResto;
-
+  const champs = { quotCompte: saved.compteCourantExpr, quotCarteDiffere: saved.carteDiffere ? Math.abs(saved.carteDiffere) : null, quotTicket: saved.ticketResto };
+  Object.entries(champs).forEach(([id, valeur]) => {
+    // On ne touche pas à un champ en cours de saisie.
+    if (valeur != null && document.activeElement !== $(id)) $(id).value = valeur;
+  });
   renderQuotResult(saved);
   renderQuotObjectif(saved);
 }
 
 function initQuotidien() {
-  const form = document.getElementById('quotForm');
-  const compteEl = document.getElementById('quotCompte');
-  const carteEl = document.getElementById('quotCarteDiffere');
-  const ticketEl = document.getElementById('quotTicket');
-  const compteErrorEl = document.getElementById('quotCompteError');
-  if (!form) return;
+  const compte = $('quotCompte');
+  const erreur = $('quotCompteError');
 
-  form.addEventListener('submit', (e) => {
+  $('quotForm').addEventListener('submit', (e) => {
     e.preventDefault();
 
     let compteCourant;
     try {
-      compteCourant = evaluerExpression(compteEl.value);
+      compteCourant = evaluerExpression(compte.value);
     } catch (err) {
-      compteEl.classList.add('invalid');
-      compteErrorEl.textContent = `Expression invalide : ${err.message}`;
+      compte.classList.add('invalid');
+      erreur.textContent = `Expression invalide : ${err.message}`;
       return;
     }
-    compteEl.classList.remove('invalid');
-    compteErrorEl.textContent = '';
+    compte.classList.remove('invalid');
+    erreur.textContent = '';
 
-    // La carte à débit différé est toujours une sortie d'argent : on force
-    // le signe négatif quel que soit ce qui a été saisi (le clavier mobile
-    // ne propose pas toujours la touche "-").
-    const carteBrut = carteEl.value === '' ? 0 : parseFloat(String(carteEl.value).replace(',', '.'));
-    const carteDiffere = carteBrut ? -Math.abs(carteBrut) : 0;
-    const updatedAt = new Date();
+    // La carte à débit différé est toujours une sortie d'argent : le signe
+    // négatif est appliqué d'office (le clavier mobile n'a pas de touche "-").
+    const carte = Math.abs(parseNumber($('quotCarteDiffere').value));
+    const ticket = $('quotTicket').value;
+    const maintenant = new Date();
 
     const data = {
       compteCourant,
-      compteCourantExpr: compteEl.value.trim(),
-      carteDiffere,
-      ticketResto: ticketEl.value === '' ? null : parseFloat(ticketEl.value),
-      updatedAt: updatedAt.toISOString(),
+      compteCourantExpr: compte.value.trim(),
+      carteDiffere: carte ? -carte : 0,
+      ticketResto: ticket === '' ? null : parseFloat(ticket),
+      updatedAt: maintenant.toISOString(),
     };
-    // Nouvelle saisie de solde = nouvelle fenêtre de dates : on recalcule la
-    // sélection automatique des charges fixes tombées entre les deux relevés
-    // (l'utilisateur pourra la corriger manuellement juste après).
+    // Nouveau solde = nouvelle période : la détection automatique des charges
+    // repart de zéro (corrigeable ensuite dans la liste).
     if (sheetReference) {
-      data.chargesManuelles = chargesAutoDefault(new Date(sheetReference.date), updatedAt);
+      data.chargesManuelles = chargesAutoDefault(parseLocalDate(sheetReference.date), maintenant);
+      data.chargesRef = sheetReference.date;
     }
 
     saveQuotidien(data);
@@ -310,5 +215,3 @@ function initQuotidien() {
 
   renderQuotidien();
 }
-
-initQuotidien();
