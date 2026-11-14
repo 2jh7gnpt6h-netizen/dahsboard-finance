@@ -42,12 +42,17 @@ test('parseDate reconnaît les formats usuels', () => {
   assert.strictEqual(c.parseDate('1 août 2025'), '2025-08-01');
   assert.strictEqual(c.parseDate('15 févr. 2026'), '2026-02-15');
   assert.strictEqual(c.parseDate('2 déc. 2025'), '2025-12-02');
+  assert.strictEqual(c.parseDate('2026/09/03'), '2026-09-03');
+  assert.strictEqual(c.parseDate('2026-09-03T00:00:00'), '2026-09-03');
+  assert.strictEqual(c.parseDate('Sep 3, 2026'), '2026-09-03'); // format lu par le navigateur
 });
 
 test('parseDate rejette ce qui n’est pas une date', () => {
   assert.strictEqual(c.parseDate(''), '');
   assert.strictEqual(c.parseDate('Total'), '');
   assert.strictEqual(c.parseDate('31/02/2026'), '');
+  assert.strictEqual(c.parseDate('12'), '');
+  assert.strictEqual(c.parseDate('1645,50'), '');
   assert.strictEqual(c.parseDate(undefined), '');
 });
 

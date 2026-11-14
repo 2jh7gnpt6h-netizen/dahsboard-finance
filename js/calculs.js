@@ -34,12 +34,19 @@ function isoDate(annee, mois, jour) {
 // Renvoie "" si la date n'est pas reconnue.
 function parseDate(brut) {
   const s = String(brut == null ? '' : brut).trim();
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
   if (m) return isoDate(+m[1], +m[2], +m[3]);
   m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})(?!\d)/);
   if (m) return isoDate(+m[3] < 100 ? 2000 + +m[3] : +m[3], +m[2], +m[1]);
   m = sansAccents(s.toLowerCase()).match(/^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})/);
   if (m && MOIS_FR[m[2]]) return isoDate(+m[3], MOIS_FR[m[2]], +m[1]);
+  // Dernier recours : tout autre format daté que le navigateur sait lire
+  // ("Sep 3, 2026"…). L'année sur 4 chiffres est exigée, sinon une cellule
+  // comme "12" serait prise pour une date.
+  if (/\d{4}/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) return isoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
   return '';
 }
 
