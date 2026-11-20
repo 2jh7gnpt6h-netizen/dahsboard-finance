@@ -314,6 +314,7 @@
     font-family: 'JetBrains Mono', monospace; font-size: 9px;
     letter-spacing: 0.1em; text-transform: uppercase;
   }
+  .tl-cycle { margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #857e72; }
   .tl-badge.done-badge { background: rgba(61,107,69,0.12); color: #3d6b45; }
   .tl-badge.today-badge { background: #8b6b2f; color: #f4f1ea; }
   .tl-badge.next-badge { background: rgba(139,107,47,0.12); color: #8b6b2f; }
@@ -600,7 +601,7 @@
     .charges-cell { padding: 20px 16px; }
     .timeline-row { grid-template-columns: 48px 1fr 80px; gap: 8px; padding: 11px 14px; }
     .timeline-header { grid-template-columns: 48px 1fr 80px; gap: 8px; padding: 8px 14px; }
-    .tl-cumul { display: none; }
+    .tl-cumul, .timeline-header > div:nth-child(4) { display: none; }
     .tl-day .day-num { font-size: 15px; }
     .tl-name { font-size: 13px; }
     .tl-amount { font-size: 12px; }
@@ -794,6 +795,7 @@
   .quot-charge-row:hover { background: #f4f1ea; }
   .quot-charge-day { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); text-align: center; }
   .quot-charge-name { color: var(--ink); }
+  .quot-charge-cycle { margin-left: 6px; font-size: 10px; color: var(--ink-mute); }
   .quot-charge-amount { font-family: 'JetBrains Mono', monospace; color: var(--ink-soft); text-align: right; }
   .quot-objectif-empty { font-size: 12px; color: var(--ink-mute); font-style: italic; }
 

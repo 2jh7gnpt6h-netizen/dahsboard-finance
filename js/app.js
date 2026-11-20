@@ -232,8 +232,10 @@ function renderBudgetRestant(m) {
   el.hidden = revenu === 0;
   if (revenu === 0) return;
 
-  const jour = new Date().getDate();
-  const disponible = revenu - (TOTAL_CHARGES - REMBOURSEMENT_TGV);
+  // Charges réelles de ce mois-ci : un mois avec deux prélèvements Fitness
+  // Park pèse 25 € de plus qu'un autre.
+  const maintenant = new Date();
+  const disponible = revenu - (totalChargesDuMois(maintenant) - REMBOURSEMENT_TGV);
   const cls = disponible > 800 ? 'pos' : disponible > 300 ? 'warn' : 'neg';
 
   el.innerHTML = `
@@ -243,11 +245,11 @@ function renderBudgetRestant(m) {
     </div>
     <div>
       <div class="budget-label">Charges déjà passées</div>
-      <div class="budget-value neg">−${fmt(chargesPayeesMontant(jour))} €</div>
+      <div class="budget-value neg">−${fmt(chargesPayeesMontant(maintenant))} €</div>
     </div>
     <div>
       <div class="budget-label">Reste à imputer</div>
-      <div class="budget-value warn">−${fmt(chargesRestantesMontant(jour))} €</div>
+      <div class="budget-value warn">−${fmt(chargesRestantesMontant(maintenant))} €</div>
     </div>
     <div>
       <div class="budget-label">Disponible net (après remb. employeur)</div>
@@ -896,31 +898,34 @@ function download(content, filename, type) {
 
 // ---------- Charges fixes (indépendant du Sheet) ----------
 function renderCharges() {
-  const jour = new Date().getDate();
-  const payees = CHARGES.filter(c => c.jour <= jour);
-  const restantes = CHARGES.filter(c => c.jour > jour);
-  const prochaine = restantes[0];
+  const maintenant = new Date();
+  const jour = maintenant.getDate();
+  const prelevements = prelevementsDuMois(maintenant);
+  const payes = prelevements.filter(p => p.jour <= jour);
+  const restants = prelevements.filter(p => p.jour > jour);
+  const prochain = restants[0];
 
-  $('chargesTotalMensuel').textContent = fmt2(TOTAL_CHARGES);
-  $('chargesPayees').innerHTML = fmt2(chargesPayeesMontant(jour)) + '<small> €</small>';
-  $('chargesPayeesSub').textContent = `${pluriel(payees.length, 'charge')} prélevée${payees.length > 1 ? 's' : ''} (jours 1–${jour})`;
-  $('chargesRestantes').innerHTML = fmt2(chargesRestantesMontant(jour)) + '<small> €</small>';
-  $('chargesRestantesSub').textContent = `${pluriel(restantes.length, 'charge')} à venir ce mois`;
+  $('chargesTotalMensuel').textContent = fmt2(sommeMontants(prelevements));
+  $('chargesPayees').innerHTML = fmt2(sommeMontants(payes)) + '<small> €</small>';
+  $('chargesPayeesSub').textContent = `${pluriel(payes.length, 'charge')} prélevée${payes.length > 1 ? 's' : ''} (jours 1–${jour})`;
+  $('chargesRestantes').innerHTML = fmt2(sommeMontants(restants)) + '<small> €</small>';
+  $('chargesRestantesSub').textContent = `${pluriel(restants.length, 'charge')} à venir ce mois`;
 
   let cumul = 0;
-  const lignes = CHARGES.map(c => {
-    cumul += c.montant;
-    const etat = c.jour < jour ? 'done' : c.jour === jour ? 'today' : c === prochaine ? 'next' : '';
+  const lignes = prelevements.map(p => {
+    cumul += p.montant;
+    const etat = p.jour < jour ? 'done' : p.jour === jour ? 'today' : p === prochain ? 'next' : '';
     const badge = {
       done: '<span class="tl-badge done-badge">✓ fait</span>',
       today: '<span class="tl-badge today-badge">aujourd\'hui</span>',
       next: '<span class="tl-badge next-badge">prochain</span>',
     }[etat] || '';
+    const cycle = estPeriodique(p.charge) ? ` <span class="tl-cycle">toutes les ${p.charge.toutesLesSemaines} sem.</span>` : '';
     return `
       <div class="timeline-row ${etat}">
-        <div class="tl-day${etat === 'today' ? ' today-day' : ''}"><span class="day-num">${c.jour}</span>du mois</div>
-        <div class="tl-name">${esc(c.nom)}${badge}</div>
-        <div class="tl-amount">${fmt2(c.montant)} €</div>
+        <div class="tl-day${etat === 'today' ? ' today-day' : ''}"><span class="day-num">${p.jour}</span>du mois</div>
+        <div class="tl-name">${esc(p.charge.nom)}${cycle}${badge}</div>
+        <div class="tl-amount">${fmt2(p.montant)} €</div>
         <div class="tl-cumul">${fmt2(cumul)} €</div>
       </div>`;
   }).join('');
@@ -934,11 +939,11 @@ function renderCharges() {
     </div>
     ${lignes}`;
 
-  if (prochaine) {
-    const attente = prochaine.jour - jour;
+  if (prochain) {
+    const attente = prochain.jour - jour;
     $('chargesNext').innerHTML = `
       <span class="next-icon">⏳</span>
-      <span>Prochaine charge : <strong>${esc(prochaine.nom)}</strong> — <strong>${fmt2(prochaine.montant)} €</strong> dans <strong>${pluriel(attente, 'jour')}</strong> (jour ${prochaine.jour})</span>`;
+      <span>Prochaine charge : <strong>${esc(prochain.charge.nom)}</strong> — <strong>${fmt2(prochain.montant)} €</strong> dans <strong>${pluriel(attente, 'jour')}</strong> (jour ${prochain.jour})</span>`;
   } else {
     $('chargesNext').innerHTML = '<span class="next-icon">✅</span><span>Toutes les charges du mois ont été prélevées.</span>';
   }

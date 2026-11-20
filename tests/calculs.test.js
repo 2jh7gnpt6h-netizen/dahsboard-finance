@@ -8,8 +8,9 @@ const lire = (f) => fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8')
 const exportes = [
   'parseDate', 'parseLocalDate', 'joursEntre', 'parseNumber', 'splitCSV', 'parseCSV',
   'totalAssets', 'netOf', 'investedValue', 'capInvested', 'monthlyBreakdown', 'computeStats',
-  'releveIlYA', 'xirr', 'rendementAnnualise', 'occurrencesCharge', 'chargesPayeesMontant',
-  'chargesRestantesMontant', 'evaluerExpression', 'CHARGES', 'TOTAL_CHARGES',
+  'releveIlYA', 'xirr', 'rendementAnnualise', 'occurrencesCharge', 'datesPrelevement', 'prelevementsDuMois',
+  'chargesPayeesMontant', 'chargesRestantesMontant', 'totalChargesDuMois', 'chargeMensuelleMoyenne',
+  'evaluerExpression', 'CHARGES', 'TOTAL_CHARGES',
 ];
 const c = vm.runInNewContext(`${lire('config.js')}\n${lire('calculs.js')}\n;({ ${exportes.join(', ')} })`);
 
@@ -234,26 +235,91 @@ test('rendementAnnualise renvoie null avec trop peu de recul', () => {
 });
 
 // ---------- Charges fixes ----------
-test('charges payées + restantes = total', () => {
-  for (const jour of [1, 3, 10, 28, 31]) {
-    proche(c.chargesPayeesMontant(jour) + c.chargesRestantesMontant(jour), c.TOTAL_CHARGES, 1e-9);
-  }
-  assert.strictEqual(c.chargesRestantesMontant(31), 0);
+const jours = (dates) => Array.from(dates, d => `${d.getMonth() + 1}/${d.getDate()}`);
+const fitness = { toutesLesSemaines: 4, derniere: '2026-11-03', nom: 'Fitness Park', montant: 25 };
+
+test('config : jours de prélèvement demandés', () => {
+  const jour = (nom) => c.CHARGES.find(x => x.nom.includes(nom)).jour;
+  assert.strictEqual(jour("L'Olivier"), 5);
+  assert.strictEqual(jour('GMF'), 3);
+  assert.strictEqual(jour('Claude'), 15);
+  assert.strictEqual(jour('Orange'), 6);
+  assert.strictEqual(jour('Cinepass'), 9);
+  const fp = c.CHARGES.find(x => x.nom === 'Fitness Park');
+  assert.strictEqual(fp.toutesLesSemaines, 4);
+  assert.strictEqual(fp.derniere, '2026-11-03');
+  assert.strictEqual(c.CHARGES.filter(x => x.nom.startsWith('Assurance habitation')).length, 1);
 });
 
-test('occurrencesCharge : début exclu, fin incluse', () => {
+test('charges payées + restantes = total du mois, tous les jours', () => {
+  for (const [mois, nbJours] of [[10, 30], [11, 31], [1, 28]]) { // nov., déc., févr. 2027
+    for (let jour = 1; jour <= nbJours; jour++) {
+      const date = new Date(2026 + (mois === 1 ? 1 : 0), mois, jour);
+      proche(c.chargesPayeesMontant(date) + c.chargesRestantesMontant(date), c.totalChargesDuMois(date), 1e-9, `${mois}/${jour}`);
+    }
+  }
+  assert.strictEqual(c.chargesRestantesMontant(new Date(2026, 10, 30)), 0);
+});
+
+test('datesPrelevement mensuel : début exclu, fin incluse', () => {
   const le8 = { jour: 8 };
-  assert.strictEqual(c.occurrencesCharge(le8, new Date(2026, 8, 3), new Date(2026, 8, 10)), 1);
+  assert.deepStrictEqual(jours(c.datesPrelevement(le8, new Date(2026, 8, 3), new Date(2026, 8, 10))), ['9/8']);
   assert.strictEqual(c.occurrencesCharge(le8, new Date(2026, 8, 8), new Date(2026, 8, 10)), 0); // déjà dans le solde du relevé
   assert.strictEqual(c.occurrencesCharge(le8, new Date(2026, 8, 3), new Date(2026, 8, 8, 9, 30)), 1);
   assert.strictEqual(c.occurrencesCharge(le8, new Date(2026, 8, 3), new Date(2026, 8, 7)), 0);
 });
 
-test('occurrencesCharge : période à cheval sur plusieurs mois', () => {
+test('datesPrelevement mensuel : période à cheval sur plusieurs mois', () => {
   assert.strictEqual(c.occurrencesCharge({ jour: 1 }, new Date(2026, 8, 3), new Date(2026, 9, 5)), 1);
   assert.strictEqual(c.occurrencesCharge({ jour: 28 }, new Date(2026, 8, 3), new Date(2026, 9, 5)), 1);
   assert.strictEqual(c.occurrencesCharge({ jour: 4 }, new Date(2026, 8, 3), new Date(2026, 9, 5)), 2);
   assert.strictEqual(c.occurrencesCharge({ jour: 31 }, new Date(2026, 1, 3), new Date(2026, 2, 5)), 1); // 31 → dernier jour de février
+});
+
+test('charge toutes les 4 semaines : cycle à partir du 3 novembre', () => {
+  // Le prélèvement de référence est exclu quand il tombe le jour du relevé.
+  assert.deepStrictEqual(jours(c.datesPrelevement(fitness, new Date(2026, 10, 3), new Date(2027, 0, 31))), ['12/1', '12/29', '1/26']);
+  // Relevé la veille : le prélèvement du 3 novembre compte.
+  assert.deepStrictEqual(jours(c.datesPrelevement(fitness, new Date(2026, 10, 2), new Date(2026, 10, 20))), ['11/3']);
+  // Le cycle se prolonge aussi vers le passé.
+  assert.deepStrictEqual(jours(c.datesPrelevement(fitness, new Date(2026, 8, 1), new Date(2026, 10, 3))), ['9/8', '10/6', '11/3']);
+  assert.deepStrictEqual(jours(c.datesPrelevement(fitness, new Date(2026, 10, 4), new Date(2026, 10, 30))), []);
+});
+
+test('charge toutes les 4 semaines : exact malgré le changement d’heure', () => {
+  // Le 25 octobre 2026 les horloges reculent d'une heure ; le cycle reste sur la même date calendaire.
+  const dates = c.datesPrelevement(fitness, new Date(2026, 9, 1), new Date(2026, 10, 10));
+  assert.deepStrictEqual(jours(dates), ['10/6', '11/3']);
+  dates.forEach(d => assert.strictEqual(d.getHours(), 0));
+});
+
+test('charge toutes les 4 semaines : décembre en compte deux, novembre un', () => {
+  const nov = c.prelevementsDuMois(new Date(2026, 10, 14)).filter(p => p.charge.nom === 'Fitness Park');
+  const dec = c.prelevementsDuMois(new Date(2026, 11, 14)).filter(p => p.charge.nom === 'Fitness Park');
+  const jan = c.prelevementsDuMois(new Date(2027, 0, 14)).filter(p => p.charge.nom === 'Fitness Park');
+  assert.deepStrictEqual(Array.from(nov, p => p.jour), [3]);
+  assert.deepStrictEqual(Array.from(dec, p => p.jour), [1, 29]);
+  assert.deepStrictEqual(Array.from(jan, p => p.jour), [26]);
+  proche(c.totalChargesDuMois(new Date(2026, 11, 14)) - c.totalChargesDuMois(new Date(2026, 10, 14)), 25, 1e-9);
+});
+
+test('prelevementsDuMois : trié par jour, total du mois', () => {
+  const nov = c.prelevementsDuMois(new Date(2026, 10, 14));
+  const ordre = Array.from(nov, p => p.jour);
+  assert.deepStrictEqual(ordre, ordre.slice().sort((a, b) => a - b));
+  assert.strictEqual(nov.length, 15); // 14 mensuelles + 1 Fitness Park
+  proche(c.totalChargesDuMois(new Date(2026, 10, 14)), 1572.41 + 25, 1e-9);
+});
+
+test('coût mensuel moyen : un prélèvement toutes les 4 semaines vaut 13/12 par mois', () => {
+  proche(c.chargeMensuelleMoyenne(fitness), 25 * 365.25 / 28 / 12, 1e-9);
+  assert.ok(c.chargeMensuelleMoyenne(fitness) > 25 && c.chargeMensuelleMoyenne(fitness) < 28);
+  assert.strictEqual(c.chargeMensuelleMoyenne({ jour: 5, montant: 9.26 }), 9.26);
+  proche(c.TOTAL_CHARGES, 1572.41 + 25 * 365.25 / 28 / 12, 1e-9);
+});
+
+test('charge périodique mal configurée : aucune date, pas de boucle infinie', () => {
+  assert.deepStrictEqual(Array.from(c.datesPrelevement({ toutesLesSemaines: 4, derniere: 'n/a' }, new Date(2026, 0, 1), new Date(2026, 11, 31))), []);
 });
 
 // ---------- Mini-calculatrice ----------

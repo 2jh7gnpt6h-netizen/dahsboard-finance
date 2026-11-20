@@ -31,25 +31,29 @@ const POSTES = [
   { key: 'Crypto', label: 'Crypto',        note: 'Coinbase + Rayn',     color: '#a85a2a' },
 ];
 
-// Charges fixes mensuelles : jour de prélèvement, libellé, montant en euros.
+// Charges fixes. Deux types de prélèvement :
+//   - mensuel :    { jour: 5, nom, montant }  — le 5 de chaque mois
+//   - périodique : { toutesLesSemaines: 4, derniere: 'AAAA-MM-JJ', nom, montant }
+//                  — toutes les 4 semaines à partir d'un prélèvement connu
+//                  (la date du dernier prélèvement suffit, mettez-la à jour
+//                  si la banque décale le cycle).
 const CHARGES = [
-  { jour: 1,  nom: 'Loyer',                  montant: 880.00 },
-  { jour: 1,  nom: 'Assurance habitation',    montant: 9.26 },
-  { jour: 3,  nom: 'Assurance auto (GMF)',    montant: 59.68 },
-  { jour: 5,  nom: 'YouTube Premium',         montant: 5.00 },
-  { jour: 6,  nom: 'Internet (Orange)',       montant: 19.59 },
-  { jour: 8,  nom: 'TGV Max Actif',           montant: 455.00 },
-  { jour: 8,  nom: 'Apple iCloud',            montant: 9.99 },
-  { jour: 11, nom: 'Cinepass',                montant: 24.00 },
-  { jour: 15, nom: 'Claude (via Apple)',      montant: 22.00 },
-  { jour: 17, nom: 'Fitness Park',            montant: 25.00 },
-  { jour: 22, nom: 'Disney+',                 montant: 4.00 },
-  { jour: 23, nom: 'Frais N26',               montant: 16.90 },
-  { jour: 25, nom: 'HBO Max (net Spliiit)',   montant: 3.99 },
-  { jour: 27, nom: 'EDF',                     montant: 60.00 },
-  { jour: 28, nom: 'Crunchyroll',             montant: 3.00 },
+  { jour: 1,  nom: 'Loyer',                          montant: 880.00 },
+  { jour: 3,  nom: 'Assurance auto (GMF)',            montant: 59.68 },
+  { jour: 5,  nom: 'YouTube Premium',                 montant: 5.00 },
+  { jour: 5,  nom: "Assurance habitation (L'Olivier)", montant: 9.26 },
+  { jour: 6,  nom: 'Internet (Orange)',               montant: 19.59 },
+  { jour: 8,  nom: 'TGV Max Actif',                   montant: 455.00 },
+  { jour: 8,  nom: 'Apple iCloud',                    montant: 9.99 },
+  { jour: 9,  nom: 'Cinepass',                        montant: 24.00 },
+  { jour: 15, nom: 'Claude (via Apple)',              montant: 22.00 },
+  { jour: 22, nom: 'Disney+',                         montant: 4.00 },
+  { jour: 23, nom: 'Frais N26',                       montant: 16.90 },
+  { jour: 25, nom: 'HBO Max (net Spliiit)',           montant: 3.99 },
+  { jour: 27, nom: 'EDF',                             montant: 60.00 },
+  { jour: 28, nom: 'Crunchyroll',                     montant: 3.00 },
+  { toutesLesSemaines: 4, derniere: '2026-11-03', nom: 'Fitness Park', montant: 25.00 },
 ];
-const TOTAL_CHARGES = CHARGES.reduce((s, c) => s + c.montant, 0);
 
 // Remboursement partiel mensuel du forfait TGV Max (ex : prise en charge employeur).
 const REMBOURSEMENT_TGV = 227.50;
