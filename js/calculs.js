@@ -306,32 +306,68 @@ function rendementAnnualise(rows, valeur, capital) {
 }
 
 // ---------- Charges fixes (CHARGES est défini dans config.js) ----------
-function chargesPayeesMontant(jour = new Date().getDate()) {
-  return CHARGES.filter(c => c.jour <= jour).reduce((s, c) => s + c.montant, 0);
+const estPeriodique = (charge) => charge.toutesLesSemaines > 0;
+
+// Dates de prélèvement d'une charge dans ]debut, fin] : le début est exclu
+// (le solde du relevé le contient déjà), la fin est incluse.
+function datesPrelevement(charge, debut, fin) {
+  const d0 = debutDuJour(debut);
+  const d1 = debutDuJour(fin);
+  const dates = [];
+
+  if (estPeriodique(charge)) {
+    const reference = parseLocalDate(charge.derniere);
+    if (!reference) return dates;
+    const pas = charge.toutesLesSemaines * 7;
+    // Premier cycle strictement après le début. Le jour est recalculé à
+    // partir du calendrier (et non en ajoutant des millisecondes) pour rester
+    // exact au passage à l'heure d'été / d'hiver.
+    for (let k = Math.floor(joursEntre(reference, d0) / pas) + 1; ; k++) {
+      const date = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate() + k * pas);
+      if (date > d1) break;
+      dates.push(date);
+    }
+    return dates;
+  }
+
+  for (let mois = new Date(d0.getFullYear(), d0.getMonth(), 1); mois <= d1; mois = new Date(mois.getFullYear(), mois.getMonth() + 1, 1)) {
+    const dernierJour = new Date(mois.getFullYear(), mois.getMonth() + 1, 0).getDate();
+    const date = new Date(mois.getFullYear(), mois.getMonth(), Math.min(charge.jour, dernierJour));
+    if (date > d0 && date <= d1) dates.push(date);
+  }
+  return dates;
 }
 
-function chargesRestantesMontant(jour = new Date().getDate()) {
-  return CHARGES.filter(c => c.jour > jour).reduce((s, c) => s + c.montant, 0);
+// Nombre de prélèvements d'une charge entre deux dates : 0 ou 1 dans le cas
+// courant, davantage si la période couvre plusieurs mois.
+const occurrencesCharge = (charge, debut, fin) => datesPrelevement(charge, debut, fin).length;
+
+// Tous les prélèvements du mois de `date`, triés par jour. Une charge
+// périodique peut y figurer deux fois (28 jours d'écart dans un mois de 31).
+function prelevementsDuMois(date = new Date()) {
+  const veille = new Date(date.getFullYear(), date.getMonth(), 0);
+  const dernier = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return CHARGES
+    .flatMap(charge => datesPrelevement(charge, veille, dernier).map(d => ({ charge, date: d, jour: d.getDate(), montant: charge.montant })))
+    .sort((a, b) => a.date - b.date);
 }
+
+const sommeMontants = (prelevements) => prelevements.reduce((s, p) => s + p.montant, 0);
+
+// Charges déjà prélevées (jour d'aujourd'hui inclus) et restant à prélever
+// dans le mois de `date`.
+const chargesPayeesMontant = (date = new Date()) => sommeMontants(prelevementsDuMois(date).filter(p => p.jour <= date.getDate()));
+const chargesRestantesMontant = (date = new Date()) => sommeMontants(prelevementsDuMois(date).filter(p => p.jour > date.getDate()));
+const totalChargesDuMois = (date = new Date()) => sommeMontants(prelevementsDuMois(date));
+
+// Coût mensuel moyen d'une charge : un prélèvement toutes les 4 semaines
+// revient à 365,25 / 28 prélèvements par an, soit un peu plus d'un par mois.
+const chargeMensuelleMoyenne = (charge) => (estPeriodique(charge) ? charge.montant * 365.25 / (7 * charge.toutesLesSemaines) / 12 : charge.montant);
+const TOTAL_CHARGES = CHARGES.reduce((s, c) => s + chargeMensuelleMoyenne(c), 0);
 
 function joursRestantsDansLeMois(date = new Date()) {
   const finMois = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   return finMois - date.getDate();
-}
-
-// Nombre de prélèvements d'une charge entre deux dates (début exclu, fin
-// incluse). Vaut 0 ou 1 dans le cas courant, davantage si la période couvre
-// plusieurs mois.
-function occurrencesCharge(charge, debut, fin) {
-  const d0 = debutDuJour(debut);
-  const d1 = debutDuJour(fin);
-  let n = 0;
-  for (let mois = new Date(d0.getFullYear(), d0.getMonth(), 1); mois <= d1; mois = new Date(mois.getFullYear(), mois.getMonth() + 1, 1)) {
-    const dernierJour = new Date(mois.getFullYear(), mois.getMonth() + 1, 0).getDate();
-    const prelevement = new Date(mois.getFullYear(), mois.getMonth(), Math.min(charge.jour, dernierJour));
-    if (prelevement > d0 && prelevement <= d1) n++;
-  }
-  return n;
 }
 
 // ---------- Mini-calculatrice ----------

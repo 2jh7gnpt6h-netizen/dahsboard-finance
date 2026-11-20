@@ -9,7 +9,10 @@
 // ouvert/fermé de la liste des charges.
 let quotChargesOpen = false;
 
-const chargeKey = (c) => c.jour + '_' + c.nom;
+// Identifiant d'une charge dans la sélection enregistrée. Il change quand son
+// jour (ou son cycle) change dans config.js : la charge est alors traitée
+// comme nouvelle et suit la détection automatique.
+const chargeKey = (c) => (estPeriodique(c) ? `${c.toutesLesSemaines}s` : c.jour) + '_' + c.nom;
 
 function loadQuotidien() {
   try {
@@ -104,13 +107,21 @@ function renderQuotObjectif(saved) {
   // débitée : elle compte. On retire ensuite les charges fixes cochées.
   const carteDiffere = saved.carteDiffere || 0; // toujours ≤ 0
   const depenseTotale = sheetReference.liquidites - (saved.compteCourant + carteDiffere);
-  const charges = CHARGES.map(c => ({
-    ...c,
-    key: chargeKey(c),
-    cochee: !!saved.chargesManuelles[chargeKey(c)],
-    // Une charge cochée à la main hors période compte pour un prélèvement.
-    fois: Math.max(occurrencesCharge(c, releve, saisie), 1),
-  }));
+  const auto = chargesAutoDefault(releve, saisie);
+  const charges = CHARGES.map(c => {
+    const key = chargeKey(c);
+    const dates = datesPrelevement(c, releve, saisie);
+    return {
+      ...c,
+      key,
+      // Les corrections manuelles sont conservées ; une charge qu'elles ne
+      // mentionnent pas (ajoutée ou déplacée depuis) suit la détection auto.
+      cochee: key in saved.chargesManuelles ? !!saved.chargesManuelles[key] : auto[key],
+      // Une charge cochée à la main hors période compte pour un prélèvement.
+      fois: Math.max(dates.length, 1),
+      jourAffiche: estPeriodique(c) ? (dates.length ? dates[0].getDate() : '↻') : c.jour,
+    };
+  });
   const cochees = charges.filter(c => c.cochee);
   const totalCharges = cochees.reduce((s, c) => s + c.montant * c.fois, 0);
   const depenseLibre = depenseTotale - totalCharges;
@@ -118,8 +129,8 @@ function renderQuotObjectif(saved) {
   const liste = charges.map(c => `
     <label class="quot-charge-row">
       <input type="checkbox" class="quot-charge-check" data-key="${esc(c.key)}" ${c.cochee ? 'checked' : ''} />
-      <span class="quot-charge-day">${c.jour}</span>
-      <span class="quot-charge-name">${esc(c.nom)}</span>
+      <span class="quot-charge-day">${c.jourAffiche}</span>
+      <span class="quot-charge-name">${esc(c.nom)}${estPeriodique(c) ? ` <span class="quot-charge-cycle">toutes les ${c.toutesLesSemaines} sem.</span>` : ''}</span>
       <span class="quot-charge-amount">${fmt(c.montant)} €${c.fois > 1 ? ` × ${c.fois}` : ''}</span>
     </label>`).join('');
 

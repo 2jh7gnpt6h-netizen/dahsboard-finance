@@ -34,7 +34,11 @@ Tout ce qui vous est propre est centralisé dans `js/config.js` :
   (Fichier → Partager → Publier sur le Web → CSV).
 - `JALONS` — les paliers de patrimoine net à suivre (ex. 30 000 €, 50 000 €…).
 - `POSTES` — libellé, établissement et couleur de chaque enveloppe.
-- `CHARGES` — vos charges fixes mensuelles (jour de prélèvement, libellé, montant).
+- `CHARGES` — vos charges fixes : soit mensuelles (`jour: 5`), soit périodiques
+  (`toutesLesSemaines: 4, derniere: '2026-11-03'` : toutes les 4 semaines à
+  partir d'un prélèvement connu). Un prélèvement périodique tombe parfois deux
+  fois dans le même mois : le total « du mois » en tient compte. Si la banque
+  décale le cycle, mettez simplement à jour `derniere`.
 - `REMBOURSEMENT_TGV`, `SEUIL_LIQUIDITE_ALERTE`, `SEUIL_LIQUIDITE_DANGER` —
   seuils d'alerte et remboursements spécifiques à votre situation.
 
